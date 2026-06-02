@@ -115,6 +115,8 @@ AI_Girlfriend/                        # OpenClaw workspace root
 ├── setup-llama.sh                    # Auto-detect HW + configure llama.cpp (Linux/macOS)
 ├── setup-openclaw.ps1                # One-click OpenClaw install + deploy (Win)
 ├── setup-openclaw.sh                 # One-click OpenClaw install + deploy (Linux/macOS)
+├── setup-all.ps1                     # 🚀 All-in-One mega script (Win)
+├── start-girlfriend.ps1              # Daily quick-start (auto-generated)
 ├── AGENTS.md                         # Agent behavior rules
 ├── SOUL.md                           # Character personality
 ├── IDENTITY.md                       # Character identity
@@ -158,6 +160,22 @@ AI_Girlfriend/                        # OpenClaw workspace root
 | [ComfyUI](https://github.com/comfyanonymous/ComfyUI) | aki-v3 | Image generation engine |
 
 ## Quick Start
+
+### 🚀 All-in-One (推荐)
+
+**一行命令，从零到跑通所有 AI 女友功能：**
+
+```powershell
+powershell -File setup-all.ps1
+```
+
+自动串行：环境检查 → 模型下载 → llama.cpp 配置 → OpenClaw 安装 → 工作区部署 → 路径检查 → 启动 → 验证。
+
+> 支持断点续传。参数：`-SkipModelDownload`, `-SkipLlamaSetup`, `-SkipOpenClawSetup`, `-DryRun`, `-NoStart`
+
+---
+
+### 分步执行 (如果你想手动控制每一环)
 
 ### 0. Setup OpenClaw
 
@@ -211,6 +229,8 @@ bash download-models.sh
 The script downloads all 5 model files (~29 GB) from HuggingFace, skips existing files, and reports progress.
 
 > 中文用户看这里：运行 `download-models.ps1` (Windows) 或 `download-models.sh` (Linux/Mac) 一键下载全部模型。
+
+如果huggingface被墙的话，去我度盘https://pan.baidu.com/s/1sLeSyVp76yzWcR3Q4pX0kA?pwd=0721下五个模型
 
 See [`models.yaml`](models.yaml) for full model details and manual download commands.
 
