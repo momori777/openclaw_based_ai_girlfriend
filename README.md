@@ -115,8 +115,10 @@ AI_Girlfriend/                        # OpenClaw workspace root
 ├── setup-llama.sh                    # Auto-detect HW + configure llama.cpp (Linux/macOS)
 ├── setup-openclaw.ps1                # One-click OpenClaw install + deploy (Win)
 ├── setup-openclaw.sh                 # One-click OpenClaw install + deploy (Linux/macOS)
-├── setup-all.ps1                     # 🚀 All-in-One mega script (Win)
-├── start-girlfriend.ps1              # Daily quick-start (auto-generated)
+├── setup-all.ps1                     # 🚀 All-in-One mega script (Windows)
+├── setup-all.sh                      # 🚀 All-in-One mega script (Linux/macOS)
+├── start-girlfriend.ps1              # Daily quick-start — auto-generated (Win)
+├── start-girlfriend.sh               # Daily quick-start — auto-generated (Linux/macOS)
 ├── AGENTS.md                         # Agent behavior rules
 ├── SOUL.md                           # Character personality
 ├── IDENTITY.md                       # Character identity
@@ -165,13 +167,19 @@ AI_Girlfriend/                        # OpenClaw workspace root
 
 **一行命令，从零到跑通所有 AI 女友功能：**
 
+**Windows:**
 ```powershell
 powershell -File setup-all.ps1
 ```
 
+**Linux / macOS:**
+```bash
+bash setup-all.sh
+```
+
 自动串行：环境检查 → 模型下载 → llama.cpp 配置 → OpenClaw 安装 → 工作区部署 → 路径检查 → 启动 → 验证。
 
-> 支持断点续传。参数：`-SkipModelDownload`, `-SkipLlamaSetup`, `-SkipOpenClawSetup`, `-DryRun`, `-NoStart`
+> 支持断点续传。参数：`--skip-model-download`, `--skip-llama-setup`, `--skip-openclaw-setup`, `--dry-run`, `--no-start`
 
 ---
 
