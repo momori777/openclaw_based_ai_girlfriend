@@ -15,7 +15,7 @@ Character: **Shiki Natsume** (四季夏目), from *Starry Moonlit Café & the Bu
 
 ## Features
 
-- 💬 **QQ Channel / DM Chat** — QQ Bot integration via OpenClaw Gateway
+- 💬 **QQ + Telegram Dual Channel** — QQ Bot + Telegram Bot integration via OpenClaw Gateway
 - 🎤 **TTS Voice Synthesis** — Local GPT-SoVITS inference, Japanese voice (14 reference audio clips)
 - 🎨 **AI Image Generation** — Local ComfyUI inference, SDXL/Illustrious models
 - 🧠 **VRAM Scheduler** — Automatic llama-server ↔ TTS/ComfyUI orchestration on 8 GB VRAM
@@ -115,6 +115,7 @@ AI_Girlfriend/                        # OpenClaw workspace root
 ├── setup-llama.sh                    # Auto-detect HW + configure llama.cpp (Linux/macOS)
 ├── setup-openclaw.ps1                # One-click OpenClaw install + deploy (Win)
 ├── setup-openclaw.sh                 # One-click OpenClaw install + deploy (Linux/macOS)
+├── config-telegram.json              # Telegram Bot config patch
 ├── setup-all.ps1                     # 🚀 All-in-One mega script (Windows)
 ├── setup-all.sh                      # 🚀 All-in-One mega script (Linux/macOS)
 ├── start-girlfriend.ps1              # Daily quick-start — auto-generated (Win)
@@ -134,6 +135,8 @@ AI_Girlfriend/                        # OpenClaw workspace root
 ├── media/qqbot/                      # [.gitignore] Generated media
 │   ├── audio/                        # TTS voice output
 │   └── images/                       # ComfyUI image output
+├── docs/
+│   └── telegram-setup.md             # Telegram Bot 配置指南
 └── skills/
     ├── tts/
     │   ├── SKILL.md                  # TTS invocation guide
@@ -156,7 +159,8 @@ AI_Girlfriend/                        # OpenClaw workspace root
 | Component | Version / Source | Purpose |
 |-----------|-----------------|---------|
 | [OpenClaw](https://docs.openclaw.ai) | latest | AI Agent Gateway |
-| QQ Bot | OpenClaw qqbot channel | Message relay |
+| QQ Bot | OpenClaw qqbot channel | QQ message relay |
+| Telegram Bot | OpenClaw telegram channel | Telegram message relay |
 | [llama.cpp](https://github.com/ggml-org/llama.cpp) | b9222 | Local LLM inference server |
 | [GPT-SoVITS v2](https://github.com/RVC-Boss/GPT-SoVITS) | v2pro-20250604 | TTS voice synthesis |
 | [ComfyUI](https://github.com/comfyanonymous/ComfyUI) | aki-v3 | Image generation engine |
@@ -317,16 +321,29 @@ schtasks /create /tn "cleanup-qqbot-orphans" `
 
 Apply `config-patch.json` via OpenClaw: `gateway config.patch.apply`.
 
+## Telegram 配置
+
+参见 [`docs/telegram-setup.md`](docs/telegram-setup.md)。
+
+快速配置：
+
+1. 通过 [@BotFather](https://t.me/BotFather) 创建 Bot，获取 Token
+2. 编辑 `config-telegram.json`，替换 `<YOUR_BOT_TOKEN>`
+3. 应用配置：`openclaw gateway call config.patch.apply --json --params (Get-Content config-telegram.json -Raw)`
+4. 重启：`openclaw gateway restart`
+
+参考了 [arlanrakh/talk-to-girlfriend-ai](https://github.com/arlanrakh/talk-to-girlfriend-ai) 的 Telegram 集成设计。
+
 ## Architecture
 
 ```
-User (QQ)
+User (QQ / Telegram)
   │
   ▼
 OpenClaw Gateway (qqbot channel)
   │
   ├── Main session (local/qwen3.6-35b)
-  │   ├── Roleplay conversation
+  │   ├── Roleplay conversation (QQ + Telegram)
   │   ├── Prompt / TTS text generation
   │   └── sessions_spawn → sub-sessions
   │

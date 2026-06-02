@@ -1,0 +1,49 @@
+// Telegram Bot 配置补丁
+// 使用方法：替换 <YOUR_BOT_TOKEN> 后，通过 openclaw gateway call config.patch.apply 应用
+
+[
+  {
+    "path": "channels.telegram.enabled",
+    "value": true
+  },
+  {
+    "path": "channels.telegram.botToken",
+    "value": "<YOUR_BOT_TOKEN>"
+  },
+  {
+    "path": "channels.telegram.dmPolicy",
+    "value": "pairing"
+  },
+  {
+    "path": "channels.telegram.replyToMode",
+    "value": "first"
+  },
+  {
+    "path": "channels.telegram.historyLimit",
+    "value": 50
+  },
+  {
+    "path": "channels.telegram.linkPreview",
+    "value": true
+  },
+  {
+    "path": "channels.telegram.mediaMaxMb",
+    "value": 100
+  },
+  {
+    "path": "channels.telegram.streaming",
+    "value": "partial"
+  },
+  {
+    "path": "channels.telegram.actions.reactions",
+    "value": true
+  },
+  {
+    "path": "channels.telegram.actions.sendMessage",
+    "value": true
+  },
+  {
+    "path": "channels.telegram.reactionNotifications",
+    "value": "own"
+  }
+]
