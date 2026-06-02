@@ -111,6 +111,8 @@ Qwen3.6 MoE uses SSM (Gated Delta Net) hybrid attention with `--kv-unified`.
 AI_Girlfriend/                        # OpenClaw workspace root
 ├── download-models.ps1               # One-click model download (Windows)
 ├── download-models.sh                # One-click model download (Linux/macOS)
+├── setup-llama.ps1                   # Auto-detect HW + configure llama.cpp (Win)
+├── setup-llama.sh                    # Auto-detect HW + configure llama.cpp (Linux/macOS)
 ├── AGENTS.md                         # Agent behavior rules
 ├── SOUL.md                           # Character personality
 ├── IDENTITY.md                       # Character identity
@@ -186,6 +188,46 @@ The script downloads all 5 model files (~29 GB) from HuggingFace, skips existing
 > 中文用户看这里：运行 `download-models.ps1` (Windows) 或 `download-models.sh` (Linux/Mac) 一键下载全部模型。
 
 See [`models.yaml`](models.yaml) for full model details and manual download commands.
+
+### 2. Setup llama.cpp
+
+Auto-detect your hardware and generate an optimized llama-server config:
+
+**Windows:**
+```powershell
+# Basic: detect hardware, generate config
+powershell -File setup-llama.ps1
+
+# With auto-build (clone + compile llama.cpp from source)
+powershell -File setup-llama.ps1 -BuildLlama
+
+# Custom model path
+powershell -File setup-llama.ps1 -ModelPath "D:\my-models\custom.gguf"
+```
+
+**Linux / macOS:**
+```bash
+# Basic
+bash setup-llama.sh
+
+# With auto-build
+bash setup-llama.sh --build
+
+# Custom model
+bash setup-llama.sh --model /path/to/custom.gguf
+```
+
+The script auto-detects:
+- **GPU** — NVIDIA (nvidia-smi), AMD (rocminfo), Apple Silicon (Metal), or fallback
+- **VRAM** — determines GPU offload layers, batch sizes, KV cache budget
+- **CPU cores** — configures thread count and batch size
+- **RAM** — checks if --no-mmap is safe (requires 32+ GB)
+
+Output in `llama-config/`:
+- `launch-llama.ps1` / `launch-llama.sh` — Start the server
+- `llama-watchdog.ps1` / `llama-watchdog.sh` — Health check for Task Scheduler / cron
+- `hardware-report.md` — Your machine's detected specs
+- Plus systemd service (Linux) or launchd plist (macOS) for auto-start
 
 ### 2. Update Paths
 
