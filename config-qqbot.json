@@ -1,0 +1,59 @@
+// QQ Bot 配置补丁
+// 使用方法：替换 <YOUR_QQ_APP_ID> 和 <YOUR_QQ_CLIENT_SECRET> 后，
+// 通过 openclaw gateway call config.patch.apply 应用
+// 获取凭证：https://q.qq.com/ → 开放平台 → 创建机器人
+
+[
+  {
+    "path": "channels.qqbot.enabled",
+    "value": true
+  },
+  {
+    "path": "channels.qqbot.name",
+    "value": "四季夏目"
+  },
+  {
+    "path": "channels.qqbot.appId",
+    "value": "<YOUR_QQ_APP_ID>"
+  },
+  {
+    "path": "channels.qqbot.clientSecret",
+    "value": "<YOUR_QQ_CLIENT_SECRET>"
+  },
+  {
+    "path": "channels.qqbot.dmPolicy",
+    "value": "open"
+  },
+  {
+    "path": "channels.qqbot.groupPolicy",
+    "value": "open"
+  },
+  {
+    "path": "channels.qqbot.markdownSupport",
+    "value": true
+  },
+  {
+    "path": "channels.qqbot.streaming.mode",
+    "value": "partial"
+  },
+  {
+    "path": "channels.qqbot.urlDirectUpload",
+    "value": true
+  },
+  {
+    "path": "channels.qqbot.audioFormatPolicy.sttDirectFormats",
+    "value": ["wav"]
+  },
+  {
+    "path": "channels.qqbot.audioFormatPolicy.uploadDirectFormats",
+    "value": ["wav"]
+  },
+  {
+    "path": "channels.qqbot.audioFormatPolicy.transcodeEnabled",
+    "value": true
+  },
+  {
+    "path": "channels.qqbot.voiceDirectUploadFormats",
+    "value": ["wav"]
+  }
+]

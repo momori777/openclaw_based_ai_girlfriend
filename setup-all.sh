@@ -41,6 +41,10 @@ while [[ $# -gt 0 ]]; do
         --comfyui-dir)      COMFYUI_DIR="$2"; shift 2 ;;
         --dry-run)          DRY_RUN=true; shift ;;
         --no-start)         NO_START=true; shift ;;
+        --skip-bot-config)  SKIP_BOT_CONFIG=true; shift ;;
+        --qq-app-id)        QQ_APP_ID="$2"; shift 2 ;;
+        --qq-client-secret) QQ_CLIENT_SECRET="$2"; shift 2 ;;
+        --tg-bot-token)     TG_BOT_TOKEN="$2"; shift 2 ;;
         -h|--help)
             echo "Usage: bash setup-all.sh [options]"
             echo ""
@@ -54,6 +58,10 @@ while [[ $# -gt 0 ]]; do
             echo "  --comfyui-dir DIR       ComfyUI install directory"
             echo "  --dry-run               Check only, no changes"
             echo "  --no-start              Don't start services"
+            echo "  --skip-bot-config       Skip QQ/Telegram Bot config"
+            echo "  --qq-app-id ID          QQ Bot AppID"
+            echo "  --qq-client-secret SEC  QQ Bot ClientSecret"
+            echo "  --tg-bot-token TOKEN    Telegram Bot Token"
             exit 0
             ;;
         *) echo "Unknown option: $1"; exit 1 ;;
@@ -71,7 +79,7 @@ ok()    { echo -e "  ${GREEN}✓${NC} $1"; }
 warn()  { echo -e "  ${YELLOW}⚠${NC} $1"; }
 err()   { echo -e "  ${RED}✗${NC} $1"; }
 info()  { echo -e "  ${GRAY}$1${NC}"; }
-step()  { echo -e "${YELLOW}[$1/7]${NC} $2"; }
+step()  { echo -e "${YELLOW}[$1/8]${NC} $2"; }
 
 # ═══════════════════════════════════════════════════════════════════
 # Banner
@@ -302,9 +310,65 @@ ok "Workspace deployed"
 echo ""
 
 # ═══════════════════════════════════════════════════════════════════
-# 5. Path audit
+# 5. Bot Token Configuration
 # ═══════════════════════════════════════════════════════════════════
-step 5 "Path audit & fix checklist"
+step 5 "Configure QQ Bot + Telegram Bot Token"
+
+if [[ "$SKIP_BOT_CONFIG" == "true" ]]; then
+    info "Skipped (--skip-bot-config)"
+else
+    # QQ Bot
+    if [[ -z "$QQ_APP_ID" ]]; then
+        echo -e "  ${CYAN}── QQ Bot Credentials ──${NC}"
+        echo -e "  ${GRAY}(Go to https://q.qq.com/ to create a bot and get AppID + ClientSecret)${NC}"
+        echo -n "  QQ AppID (enter to skip): "
+        read -r QQ_APP_ID
+    fi
+    if [[ -n "$QQ_APP_ID" && -z "$QQ_CLIENT_SECRET" ]]; then
+        echo -n "  QQ ClientSecret: "
+        read -r QQ_CLIENT_SECRET
+    fi
+
+    # Telegram Bot
+    if [[ -z "$TG_BOT_TOKEN" ]]; then
+        echo -e "  ${CYAN}── Telegram Bot Token ──${NC}"
+        echo -e "  ${GRAY}(Send /newbot to https://t.me/BotFather to create a bot)${NC}"
+        echo -n "  Telegram Bot Token (enter to skip): "
+        read -r TG_BOT_TOKEN
+    fi
+
+    # Apply QQ Bot config
+    if [[ -n "$QQ_APP_ID" && -n "$QQ_CLIENT_SECRET" ]]; then
+        info "Applying QQ Bot config..."
+        if command -v openclaw &>/dev/null; then
+            QQ_PATCH='[{"path":"channels.qqbot.enabled","value":true},{"path":"channels.qqbot.name","value":"四季夏目"},{"path":"channels.qqbot.appId","value":"'"$QQ_APP_ID"'"},{"path":"channels.qqbot.clientSecret","value":"'"$QQ_CLIENT_SECRET"'"},{"path":"channels.qqbot.dmPolicy","value":"open"},{"path":"channels.qqbot.groupPolicy","value":"open"},{"path":"channels.qqbot.markdownSupport","value":true},{"path":"channels.qqbot.streaming.mode","value":"partial"},{"path":"channels.qqbot.urlDirectUpload","value":true}]'
+            openclaw gateway call config.patch.apply --json --params "$QQ_PATCH" 2>/dev/null && ok "QQ Bot configured" || warn "QQ Bot config failed — apply config-qqbot.json manually"
+        else
+            warn "openclaw CLI not found — apply config-qqbot.json manually"
+        fi
+    else
+        info "QQ Bot skipped"
+    fi
+
+    # Apply Telegram Bot config
+    if [[ -n "$TG_BOT_TOKEN" ]]; then
+        info "Applying Telegram Bot config..."
+        if command -v openclaw &>/dev/null; then
+            TG_PATCH='[{"path":"channels.telegram.enabled","value":true},{"path":"channels.telegram.botToken","value":"'"$TG_BOT_TOKEN"'"},{"path":"channels.telegram.dmPolicy","value":"pairing"},{"path":"channels.telegram.replyToMode","value":"first"},{"path":"channels.telegram.historyLimit","value":50},{"path":"channels.telegram.streaming","value":"partial"},{"path":"channels.telegram.linkPreview","value":true},{"path":"channels.telegram.mediaMaxMb","value":100},{"path":"channels.telegram.actions.reactions","value":true},{"path":"channels.telegram.actions.sendMessage","value":true},{"path":"channels.telegram.reactionNotifications","value":"own"}]'
+            openclaw gateway call config.patch.apply --json --params "$TG_PATCH" 2>/dev/null && ok "Telegram Bot configured" || warn "Telegram Bot config failed — apply config-telegram.json manually"
+        else
+            warn "openclaw CLI not found — apply config-telegram.json manually"
+        fi
+    else
+        info "Telegram Bot skipped"
+    fi
+fi
+echo ""
+
+# ═══════════════════════════════════════════════════════════════════
+# 6. Path audit
+# ═══════════════════════════════════════════════════════════════════
+step 6 "Path audit & fix checklist"
 echo ""
 echo -e "  ${YELLOW}╔══════════════════════════════════════════════════════════╗${NC}"
 echo -e "  ${YELLOW}║  ⚠️  These files have hardcoded paths — edit manually!   ║${NC}"
@@ -335,9 +399,9 @@ echo -e "  ${CYAN}💡 Use sed or VS Code to find/replace hardcoded paths${NC}"
 echo ""
 
 # ═══════════════════════════════════════════════════════════════════
-# 6. Start services
+# 7. Start services
 # ═══════════════════════════════════════════════════════════════════
-step 6 "Start services"
+step 7 "Start services"
 
 if [[ "$NO_START" == "true" ]]; then
     info "Skipped (--no-start)"
@@ -369,9 +433,9 @@ fi
 echo ""
 
 # ═══════════════════════════════════════════════════════════════════
-# 7. Verification
+# 8. Verification
 # ═══════════════════════════════════════════════════════════════════
-step 7 "Verification"
+step 8 "Verification"
 
 # llama-server health
 if curl -s --connect-timeout 5 http://127.0.0.1:8080/health >/dev/null 2>&1; then
@@ -418,9 +482,9 @@ echo -e "${GREEN}║           Time: ${ELAPSED}min | Workspace: $WORKSPACE_PATH$
 echo -e "${GREEN}╚═══════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 echo -e "  ${YELLOW}📋 Must-do checklist:${NC}"
-echo -e "    ${WHITE}1. Edit hardcoded paths in skills/*.py + SKILL.md (see Step 5)${NC}"
+echo -e "    ${WHITE}1. Edit hardcoded paths in skills/*.py + SKILL.md (see Step 6)${NC}"
 echo -e "    ${WHITE}2. Edit USER.md (your name/handle)${NC}"
-echo -e "    ${WHITE}3. Configure QQ Bot channel${NC}"
+echo -e "    ${WHITE}3. (If you skipped Step 5) Manually configure QQ/Telegram Bot tokens${NC}"
 echo ""
 echo -e "  ${CYAN}🚀 Daily startup:${NC}"
 echo -e "    ${WHITE}bash start-girlfriend.sh${NC}"

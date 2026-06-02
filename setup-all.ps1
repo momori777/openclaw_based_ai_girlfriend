@@ -15,6 +15,10 @@ param(
     [switch]$SkipModelDownload,
     [switch]$SkipLlamaSetup,
     [switch]$SkipOpenClawSetup,
+    [switch]$SkipBotConfig,
+    [string]$QQAppId = "",
+    [string]$QQClientSecret = "",
+    [string]$TGBotToken = "",
     [string]$WorkspacePath = "",
     [string]$GPTSoVitsDir = "",
     [string]$ComfyUIDir = "",
@@ -30,7 +34,7 @@ function wok { param($t) Write-Host "  ✓ $t" -ForegroundColor Green }
 function warn { param($t) Write-Host "  ⚠ $t" -ForegroundColor Yellow }
 function err { param($t) Write-Host "  ✗ $t" -ForegroundColor Red }
 function info { param($t) Write-Host "  $t" -ForegroundColor Gray }
-function step { param($n,$t) Write-Host "[$n/7] $t" -ForegroundColor Yellow }
+function step { param($n,$t) Write-Host "[$n/8] $t" -ForegroundColor Yellow }
 
 Clear-Host 2>$null
 Write-Host "╔═══════════════════════════════════════════════════════════════════╗" -ForegroundColor Magenta
@@ -139,8 +143,81 @@ foreach ($d in @("$WorkspacePath\memory\role_play","$WorkspacePath\media\qqbot\a
 wok "工作区部署完成"
 Write-Host ""
 
-# ═══ 5. 路径检查 ═══
-step 5 "路径检查 & 修复清单"
+# ═══ 5. Bot Token 配置 ═══
+step 5 "配置 QQ Bot + Telegram Bot Token"
+
+if ($SkipBotConfig) {
+    info "已跳过 (--skip-bot-config)"
+} else {
+    $qqbotConfigFile = Join-Path $ScriptDir "config-qqbot.json"
+    $tgConfigFile = Join-Path $ScriptDir "config-telegram.json"
+
+    # QQ Bot
+    if (-not $QQAppId) {
+        Write-Host "  ── QQ Bot 凭证 ──" -ForegroundColor Cyan
+        Write-Host "  (去 https://q.qq.com/ 创建机器人获取 AppID 和 ClientSecret)" -ForegroundColor Gray
+        $QQAppId = Read-Host "  QQ AppID (留空跳过)"
+    }
+    $qqSecret = $QQClientSecret
+    if ($QQAppId -and -not $qqSecret) {
+        $qqSecret = Read-Host "  QQ ClientSecret"
+    }
+
+    # Telegram Bot
+    if (-not $TGBotToken) {
+        Write-Host "  ── Telegram Bot Token ──" -ForegroundColor Cyan
+        Write-Host "  (去 https://t.me/BotFather 发 /newbot 创建 Bot 获取 Token)" -ForegroundColor Gray
+        $TGBotToken = Read-Host "  Telegram Bot Token (留空跳过)"
+    }
+
+    # 应用 QQ Bot 配置
+    if ($QQAppId -and $qqSecret) {
+        info "应用 QQ Bot 配置..."
+        try {
+            $qqPatch = @(
+                @{path="channels.qqbot.enabled"; value=$true},
+                @{path="channels.qqbot.name"; value="四季夏目"},
+                @{path="channels.qqbot.appId"; value=$QQAppId},
+                @{path="channels.qqbot.clientSecret"; value=$qqSecret},
+                @{path="channels.qqbot.dmPolicy"; value="open"},
+                @{path="channels.qqbot.groupPolicy"; value="open"},
+                @{path="channels.qqbot.markdownSupport"; value=$true},
+                @{path="channels.qqbot.streaming.mode"; value="partial"},
+                @{path="channels.qqbot.urlDirectUpload"; value=$true}
+            )
+            $qqParams = @{patch=$qqPatch} | ConvertTo-Json -Depth 5 -Compress
+            & openclaw gateway call config.patch.apply --json --params $qqParams 2>&1 | Out-Null
+            wok "QQ Bot 配置已应用"
+        } catch { warn "QQ Bot 配置失败，请稍后手动: config-qqbot.json" }
+    } else { info "QQ Bot 已跳过" }
+
+    # 应用 Telegram Bot 配置
+    if ($TGBotToken) {
+        info "应用 Telegram Bot 配置..."
+        try {
+            $tgPatch = @(
+                @{path="channels.telegram.enabled"; value=$true},
+                @{path="channels.telegram.botToken"; value=$TGBotToken},
+                @{path="channels.telegram.dmPolicy"; value="pairing"},
+                @{path="channels.telegram.replyToMode"; value="first"},
+                @{path="channels.telegram.historyLimit"; value=50},
+                @{path="channels.telegram.streaming"; value="partial"},
+                @{path="channels.telegram.linkPreview"; value=$true},
+                @{path="channels.telegram.mediaMaxMb"; value=100},
+                @{path="channels.telegram.actions.reactions"; value=$true},
+                @{path="channels.telegram.actions.sendMessage"; value=$true},
+                @{path="channels.telegram.reactionNotifications"; value="own"}
+            )
+            $tgParams = @{patch=$tgPatch} | ConvertTo-Json -Depth 5 -Compress
+            & openclaw gateway call config.patch.apply --json --params $tgParams 2>&1 | Out-Null
+            wok "Telegram Bot 配置已应用"
+        } catch { warn "Telegram Bot 配置失败，请稍后手动: config-telegram.json" }
+    } else { info "Telegram Bot 已跳过" }
+}
+Write-Host ""
+
+# ═══ 6. 路径检查 ═══
+step 6 "路径检查 & 修复清单"
 Write-Host "  ╔════════════════════════════════════════════════════════╗" -ForegroundColor Yellow
 Write-Host "  ║  ⚠️ 以下文件有硬编码路径，需手动修改！                  ║" -ForegroundColor Yellow
 Write-Host "  ╚════════════════════════════════════════════════════════╝" -ForegroundColor Yellow
@@ -162,8 +239,8 @@ foreach ($e in $edits) {
 Write-Host "  💡 用 VS Code 全局替换: Ctrl+Shift+H → C:\Users\TK → 你的用户名" -ForegroundColor Cyan
 Write-Host ""
 
-# ═══ 6. 启动服务 ═══
-step 6 "启动服务"
+# ═══ 7. 启动服务 ═══
+step 7 "启动服务"
 if ($NoStart) { info "已跳过" }
 else {
     $ls = "$ScriptDir\llama-config\launch-llama.ps1"
@@ -177,8 +254,8 @@ else {
 }
 Write-Host ""
 
-# ═══ 7. 验证 ═══
-step 7 "验证"
+# ═══ 8. 验证 ═══
+step 8 "验证"
 try { $h = Invoke-RestMethod "http://127.0.0.1:8080/health" -Timeout 5; wok "llama-server ✅" } catch { warn "llama-server 未就绪" }
 try { & openclaw gateway status 2>&1 | Out-Null; if ($LASTEXITCODE -eq 0) { wok "Gateway ✅" } else { warn "Gateway 未知" } } catch { warn "Gateway 未检测到" }
 if (Test-Path "$WorkspacePath\AGENTS.md") { wok "工作区完整 ✅" } else { err "工作区缺失" }
@@ -194,9 +271,9 @@ Write-Host "║           总耗时: ${elapsed}min | 工作区: $WorkspacePath" 
 Write-Host "╚═══════════════════════════════════════════════════════════════════╝" -ForegroundColor Green
 Write-Host ""
 Write-Host "  📋 必做清单:" -ForegroundColor Yellow
-Write-Host "    1. 修改 skills/*.py + SKILL.md 中的硬编码路径 (见Step 5)" -ForegroundColor White
+Write-Host "    1. 修改 skills/*.py + SKILL.md 中的硬编码路径 (见Step 6)" -ForegroundColor White
 Write-Host "    2. 修改 USER.md (你的名字/称呼)" -ForegroundColor White
-Write-Host "    3. 配置 QQ Bot 通道" -ForegroundColor White
+Write-Host "    3. (如跳过Step 5) 手动配置 QQ/Telegram Bot Token" -ForegroundColor White
 Write-Host ""
 Write-Host "  🚀 日常启动:" -ForegroundColor Cyan
 Write-Host "    powershell -File start-girlfriend.ps1" -ForegroundColor White

@@ -126,7 +126,9 @@ AI_Girlfriend/                        # OpenClaw workspace root
 ├── USER.md                           # User info (modify for yourself)
 ├── HEARTBEAT.md                      # Heartbeat config
 ├── TOOLS.md                          # Tool quick reference
-├── config-patch.json                 # OpenClaw config patch
+├── config-patch.json                 # OpenClaw LLM config patch
+├── config-telegram.json              # Telegram Bot config patch
+├── config-qqbot.json                 # QQ Bot config patch
 ├── models.yaml                       # Model catalog + download links
 ├── README.md                         # This file
 ├── .gitignore
@@ -136,7 +138,8 @@ AI_Girlfriend/                        # OpenClaw workspace root
 │   ├── audio/                        # TTS voice output
 │   └── images/                       # ComfyUI image output
 ├── docs/
-│   └── telegram-setup.md             # Telegram Bot 配置指南
+│   ├── telegram-setup.md             # Telegram Bot 配置指南
+│   └── qqbot-setup.md                # QQ Bot 配置指南
 └── skills/
     ├── tts/
     │   ├── SKILL.md                  # TTS invocation guide
@@ -321,6 +324,17 @@ schtasks /create /tn "cleanup-qqbot-orphans" `
 
 Apply `config-patch.json` via OpenClaw: `gateway config.patch.apply`.
 
+## QQ Bot 配置
+
+参见 [`docs/qqbot-setup.md`](docs/qqbot-setup.md)。
+
+快速配置：
+
+1. 前往 [QQ 开放平台](https://q.qq.com/) 创建私域机器人，获取 **AppID** + **ClientSecret**
+2. 编辑 `config-qqbot.json`，替换 `<YOUR_QQ_APP_ID>` 和 `<YOUR_QQ_CLIENT_SECRET>`
+3. 应用配置：`openclaw gateway call config.patch.apply --json --params (Get-Content config-qqbot.json -Raw)`
+4. QQ Bot channel 支持热更新，无需重启
+
 ## Telegram 配置
 
 参见 [`docs/telegram-setup.md`](docs/telegram-setup.md)。
@@ -340,7 +354,7 @@ Apply `config-patch.json` via OpenClaw: `gateway config.patch.apply`.
 User (QQ / Telegram)
   │
   ▼
-OpenClaw Gateway (qqbot channel)
+OpenClaw Gateway (qqbot + telegram channel)
   │
   ├── Main session (local/qwen3.6-35b)
   │   ├── Roleplay conversation (QQ + Telegram)
