@@ -1,0 +1,61 @@
+# 记忆文件 - 不提交
+memory/
+
+# 生成的媒体文件
+media/qqbot/audio/*.wav
+media/qqbot/images/*.png
+media/qqbot/images/*.jpg
+
+# 运行时标志
+.task_flags/
+
+# OpenClaw 状态
+.openclaw/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# 临时音频
+*.wav
+!skills/tts/ref_wavs/*.wav
+
+# 模型文件（不提交任何模型权重）
+*.safetensors
+*.gguf
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.engine
+
+# 参考音频（模型资产）
+skills/tts/ref_wavs/
+
+# 压缩包
+*.rar
+*.zip
+*.7z
+
+# llama 运行日志
+*llama*.txt
+*.log
+*.txt
+
+# HuggingFace 临时上传目录
+hf-natsume/upload-to-huggingface.ps1
+!hf-natsume/README.md
+!hf-natsume/DISCLAIMER.txt
+
+# 系统文件
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

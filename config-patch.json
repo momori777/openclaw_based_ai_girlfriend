@@ -1,0 +1,17 @@
+# OpenClaw 配置补丁
+
+## 本地 LLM 上下文窗口扩展
+
+将 localhost:8080 的 llama-server 模型 context window 从默认值扩展到 262144 tokens，
+以支持更长的角色扮演对话历史。
+
+```json
+[
+  {"path":"models.providers.custom-localhost-8080.models.0.maxTokens","value":4096},
+  {"path":"models.providers.custom-localhost-8080.models.0.contextWindow","value":262144}
+]
+```
+
+### 应用方式
+
+在 OpenClaw 中通过 `gateway config.patch.apply` 应用。

@@ -1,0 +1,60 @@
+# 模型清单 — AI Girlfriend 四季夏目
+#
+# 所有模型托管在 HuggingFace:
+#   https://huggingface.co/TAOTAO777/ai-girlfriend-natsume
+#
+# 下载方式:
+#   huggingface-cli download TAOTAO777/ai-girlfriend-natsume <repo_path> --local-dir <你的目录>
+#   或直接在 HF 网页下载单个文件
+
+models:
+  # =========================================================================
+  # 本地 LLM — llama.cpp GGUF
+  # =========================================================================
+  - name: Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Compact
+    type: GGUF (Q4_K, 16.11 GB, 34.66B MoE, 8/256 experts)
+    repo: TAOTAO777/ai-girlfriend-natsume
+    repo_path: llm/Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Compact.gguf
+    local_path: C:\Users\TK\Desktop\vllm\models\
+    download: |
+      huggingface-cli download TAOTAO777/ai-girlfriend-natsume llm/Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Compact.gguf --local-dir models
+    upstream: https://huggingface.co/mudler/Qwen3.6-35B-A3B-uncensored-heretic-APEX-GGUF
+    license: Apache 2.0 (Qwen upstream)
+
+  # =========================================================================
+  # ComfyUI 文生图 Checkpoints
+  # =========================================================================
+  - name: WAI-Nsfw-Illustrious-17
+    type: safetensors (SDXL/Illustrious, 6.46 GB)
+    repo: TAOTAO777/ai-girlfriend-natsume
+    repo_path: comfyui-checkpoints/WAI-Nsfw-Illustrious-17.safetensors
+    local_path: E:\comfyui\ComfyUI-aki-v3\ComfyUI\models\checkpoints\
+    download: |
+      huggingface-cli download TAOTAO777/ai-girlfriend-natsume comfyui-checkpoints/WAI-Nsfw-Illustrious-17.safetensors --local-dir checkpoints
+    upstream: https://civitai.com/models/1185480/wai-nsfw-illustrious
+    note: 二次元角色生成默认模型
+
+  - name: miaomiaoHarem_v20
+    type: safetensors (6.46 GB)
+    repo: TAOTAO777/ai-girlfriend-natsume
+    repo_path: comfyui-checkpoints/miaomiaoHarem_v20.safetensors
+    local_path: E:\comfyui\ComfyUI-aki-v3\ComfyUI\models\checkpoints\
+    download: |
+      huggingface-cli download TAOTAO777/ai-girlfriend-natsume comfyui-checkpoints/miaomiaoHarem_v20.safetensors --local-dir checkpoints
+    upstream: https://civitai.com/models/1033365/miaomiaoharem
+    note: 备用模型，动漫后宫风格
+
+  # =========================================================================
+  # GPT-SoVITS v2 Pro — 声优权重（自训练）
+  # =========================================================================
+  - name: GPT-SoVITS 声优权重
+    type: SoVITS ckpt + GPT pth (共约 303 MB)
+    repo: TAOTAO777/ai-girlfriend-natsume
+    files:
+      - repo_path: gpt-sovits-weights/SoVITS_weights_v2Pro/xxx-e30.ckpt
+        local_path: C:\Users\TK\Desktop\vllm\GPT-SoVITS-v2pro-20250604-nvidia50\SoVITS_weights_v2Pro\
+      - repo_path: gpt-sovits-weights/GPT_weights_v2Pro/xxx_e20_s6240.pth
+        local_path: C:\Users\TK\Desktop\vllm\GPT-SoVITS-v2pro-20250604-nvidia50\GPT_weights_v2Pro\
+    download: |
+      huggingface-cli download TAOTAO777/ai-girlfriend-natsume gpt-sovits-weights/ --local-dir gpt-sovits-weights --include "*.ckpt" "*.pth"
+    note: 自训练声优模型，需两个文件配对使用。用你自己的声优数据训练替代
