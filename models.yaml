@@ -51,10 +51,12 @@ models:
     type: SoVITS ckpt + GPT pth (共约 303 MB)
     repo: TAOTAO777/ai-girlfriend-natsume
     files:
-      - repo_path: gpt-sovits-weights/SoVITS_weights_v2Pro/xxx-e30.ckpt
-        local_path: C:\Users\TK\Desktop\vllm\GPT-SoVITS-v2pro-20250604-nvidia50\SoVITS_weights_v2Pro\
-      - repo_path: gpt-sovits-weights/GPT_weights_v2Pro/xxx_e20_s6240.pth
+      - repo_path: gpt-sovits-weights/GPT_weights_v2Pro/xxx-e30.ckpt
         local_path: C:\Users\TK\Desktop\vllm\GPT-SoVITS-v2pro-20250604-nvidia50\GPT_weights_v2Pro\
+        note: SoVITS 权重（命名交叉：GPT目录放ckpt，SoVITS目录放pth）
+      - repo_path: gpt-sovits-weights/SoVITS_weights_v2Pro/xxx_e20_s6240.pth
+        local_path: C:\Users\TK\Desktop\vllm\GPT-SoVITS-v2pro-20250604-nvidia50\SoVITS_weights_v2Pro\
+        note: GPT 权重（配对使用）
     download: |
       huggingface-cli download TAOTAO777/ai-girlfriend-natsume gpt-sovits-weights/ --local-dir gpt-sovits-weights --include "*.ckpt" "*.pth"
     note: 自训练声优模型，需两个文件配对使用。用你自己的声优数据训练替代
