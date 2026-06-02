@@ -113,6 +113,8 @@ AI_Girlfriend/                        # OpenClaw workspace root
 ├── download-models.sh                # One-click model download (Linux/macOS)
 ├── setup-llama.ps1                   # Auto-detect HW + configure llama.cpp (Win)
 ├── setup-llama.sh                    # Auto-detect HW + configure llama.cpp (Linux/macOS)
+├── setup-openclaw.ps1                # One-click OpenClaw install + deploy (Win)
+├── setup-openclaw.sh                 # One-click OpenClaw install + deploy (Linux/macOS)
 ├── AGENTS.md                         # Agent behavior rules
 ├── SOUL.md                           # Character personality
 ├── IDENTITY.md                       # Character identity
@@ -156,6 +158,29 @@ AI_Girlfriend/                        # OpenClaw workspace root
 | [ComfyUI](https://github.com/comfyanonymous/ComfyUI) | aki-v3 | Image generation engine |
 
 ## Quick Start
+
+### 0. Setup OpenClaw
+
+Install OpenClaw Gateway and deploy the AI Girlfriend workspace with one command:
+
+**Windows:**
+```powershell
+powershell -File setup-openclaw.ps1
+```
+
+**Linux / macOS:**
+```bash
+bash setup-openclaw.sh
+```
+
+This script will:
+- Install Node.js (if needed)
+- Install OpenClaw Gateway via the official install script
+- Deploy all workspace files (AGENTS.md, SOUL.md, skills, etc.) to your OpenClaw workspace
+- Install the Gateway daemon for auto-start
+- Apply the config patch for local LLM context window
+
+> **Flags:** `--skip-node`, `--skip-deploy`, `--skip-daemon`, `--no-onboard`
 
 ### 1. Download Models
 
@@ -229,7 +254,7 @@ Output in `llama-config/`:
 - `hardware-report.md` — Your machine's detected specs
 - Plus systemd service (Linux) or launchd plist (macOS) for auto-start
 
-### 2. Update Paths
+### 3. Update Paths
 
 All absolute paths in the following files must be updated to match your environment:
 
@@ -242,11 +267,11 @@ All absolute paths in the following files must be updated to match your environm
 | `skills/llama-watchdog.ps1` | llama-server path, restart script path |
 | `skills/cleanup_orphans.ps1` | Project directory, comfyui_output directory |
 
-### 3. Deploy to OpenClaw
+### 4. Deploy to OpenClaw
 
-Use `AI_Girlfriend/` as your OpenClaw workspace. Configure the qqbot channel to point to this directory.
+If you haven't already run `setup-openclaw.ps1`/`setup-openclaw.sh`, you can manually use `AI_Girlfriend/` as your OpenClaw workspace. Configure the qqbot channel to point to this directory.
 
-### 4. Windows Task Scheduler
+### 5. Windows Task Scheduler
 
 ```powershell
 # Llama health check (every 10 min)
@@ -260,7 +285,7 @@ schtasks /create /tn "cleanup-qqbot-orphans" `
   /sc hourly /mo 1
 ```
 
-### 5. Apply Config Patch
+### 6. Apply Config Patch
 
 Apply `config-patch.json` via OpenClaw: `gateway config.patch.apply`.
 
