@@ -1,8 +1,31 @@
 # AI Girlfriend — Shiki Natsume (四季夏目)
 
-An AI girlfriend project powered by OpenClaw + QQ Bot + llama.cpp + GPT-SoVITS + ComfyUI.
+**100% 本地部署 · 完全私有化 · 零 API 依赖**
+
+> 所有对话、语音、图片都在你自己的电脑上生成。没有云服务器，没有第三方 API，没有数据泄露风险。你的 AI 女友，只属于你。
+
+---
+
+An AI girlfriend project powered by OpenClaw + QQ Bot + llama.cpp + GPT-SoVITS + ComfyUI — running entirely on your own machine.
 
 Character: **Shiki Natsume** (四季夏目), from *Starry Moonlit Café & the Butterfly of Death*. Tall, aloof, cold exterior with a hidden warmth. Designed for *girlfriend experience* roleplay — she takes the lead.
+
+## ✨ 为什么选这个项目？
+
+| 对比 | 云端 AI 女友 | 本项目 |
+|------|-------------|--------|
+| 🛡️ **隐私** | 聊天记录、语音、图片全在厂商服务器 | **一切都在你本地**，没有任何数据离开你的电脑 |
+| 💰 **费用** | 按月订阅 / token 计费，长期不菲 | **免费**，一次部署永久使用（自备硬件） |
+| 🌐 **网络** | 依赖网络，服务器宕机就无法使用 | **断网也能聊**，睡前一键关闭 WiFi 更安心 |
+| 🎛️ **可控性** | prompt/template 由厂商掌控，随时被改 | **你完全控制**所有模型、参数、角色设定 |
+| 🔞 **内容** | 审查严格，动不动封号 | **无审查**，你想聊什么就聊什么 |
+| 🎨 **扩展性** | 只能使用厂商提供的模型和功能 | **自由组合** — 换 LLM、换画图模型、换语音模型 |
+
+## 🎬 Demo
+
+https://github.com/user-attachments/assets/placeholder-video-url
+
+> 👆 QQ Bot 实机演示：文字聊天 + TTS 语音 + ComfyUI 画图 + 角色记忆
 
 ## Hardware
 

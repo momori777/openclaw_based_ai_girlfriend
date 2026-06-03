@@ -27,6 +27,6 @@
 
 ## 显存管理
 
-RTX 5070 12GB 显存，llama-server + TTS/ComfyUI 不能同时跑。
+RTX 5070 8GB 显存，llama-server + TTS/ComfyUI 不能同时跑。
 架构：主 session 写 prompt → 子 session (DeepSeek) exec Python 脚本 → announce 回主 session。
 详见 `skills/llama-management.md`。

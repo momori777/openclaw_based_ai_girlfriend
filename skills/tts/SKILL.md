@@ -1,4 +1,4 @@
-# GPT-SoVITS TTS 执行手册（qqbot 主 session 专用）
+# GPT-SoVITS TTS 执行手册（主 session 专用）
 
 ## ⚠️ 核心规则：你不能 exec TTS！你要 spawn 子 session！
 
@@ -30,7 +30,7 @@ sessions_spawn({
 
 powershell -ExecutionPolicy Bypass -Command "
 $taskId = ('tts_' + (Get-Date -Format 'HHmmss') + '_' + [System.Random]::new().Next(1000,9999))
-$flagDir = 'C:\\Users\\TK\\.openclaw\\workspace\\qqbot\\.task_flags'
+$flagDir = 'C:\\Users\\TK\\.openclaw\\workspace\\.task_flags'
 $flagFile = '$flagDir\\$taskId.done'
 mkdir $flagDir -Force -ErrorAction SilentlyContinue | Out-Null
 
@@ -44,7 +44,7 @@ $mood = 'casual'
 $env:PYTHONIOENCODING = 'utf-8'
 $env:HF_ENDPOINT = 'https://hf-mirror.com'
 
-$wavPath = & 'C:\\Users\\TK\\Desktop\\vllm\\GPT-SoVITS-v2pro-20250604-nvidia50\\runtime\\python.exe' 'C:\\Users\\TK\\.openclaw\\workspace\\qqbot\\skills\\tts\\tts_call.py' $text $lang $mood 2>&1
+$wavPath = & 'C:\\Users\\TK\\Desktop\\vllm\\GPT-SoVITS-v2pro-20250604-nvidia50\\runtime\\python.exe' 'C:\\Users\\TK\\.openclaw\\workspace\\skills\\tts\\tts_call.py' $text $lang $mood 2>&1
 $lines = $wavPath | Where-Object { $_ -like '*.wav' }
 $realPath = $lines | Select-Object -Last 1
 
@@ -91,7 +91,7 @@ sessions_spawn 后直接回复用户："正在合成语音，稍等哦~ 🎤"
 
 ## 你的职责 vs 子 session 的职责
 
-| 你（qqbot 主 session） | 子 session（local qwen + deepseek fallback） |
+| 你（主 session） | 子 session（local qwen + deepseek fallback） |
 |------------------------|---------------------------------------------|
 | ✅ 写好待合成的文本 | ✅ 执行 exec 命令 |
 | ✅ 选语言和情绪模式 | ✅ 复制 wav 到 media/qqbot/audio |
@@ -101,9 +101,9 @@ sessions_spawn 后直接回复用户："正在合成语音，稍等哦~ 🎤"
 
 ## .task_flags 文件
 
-- 路径: `C:\Users\TK\.openclaw\workspace\qqbot\.task_flags\`
+- 路径: `C:\Users\TK\.openclaw\workspace\.task_flags\`
 - 格式: `{"status":"ok","file":"<path>","type":"tts"}` 或 `{"status":"fail"}`
-- 由 Windows Task Scheduler `cleanup-qqbot-orphans` 每小时自动清理
+- 由 Windows Task Scheduler `cleanup-orphans` 每小时自动清理
 
 ## 故障排查
 

@@ -2,7 +2,7 @@
 
 ## 背景
 
-RTX 5070 只有 12GB 显存。llama-server（local/qwen3.6-35b）占用约 6GB。
+RTX 5070 只有 8GB 显存。llama-server（local/qwen3.6-35b）占用约 5.8GB。
 TTS（GPT-SoVITS）需要约 2-3GB。ComfyUI 需要约 4-7GB。
 三者同时跑必 OOM。
 
@@ -10,8 +10,8 @@ TTS（GPT-SoVITS）需要约 2-3GB。ComfyUI 需要约 4-7GB。
 
 ### 职责分-工
 
-| 主 session（qqbot, local/qwen） | 子 session（DeepSeek） |
-|-------------------------------|----------------------|
+| 主 session（local/qwen） | 子 session（DeepSeek） |
+|-------------------------|----------------------|
 | 读模板/TTS文本、写英文 prompt | exec PowerShell |
 | sessions_spawn 子 session | 跑 Python 脚本（停llama→推理→起llama） |
 | 回复用户"正在处理" | 复制媒体文件到 media/qqbot/ |
@@ -28,7 +28,7 @@ TTS（GPT-SoVITS）需要约 2-3GB。ComfyUI 需要约 4-7GB。
 ### 流程
 
 ```
-主 session (qqbot, local/qwen)    子 session (DeepSeek)         Python 脚本           Windows Task Scheduler
+主 session (local/qwen)         子 session (DeepSeek)         Python 脚本           Windows Task Scheduler
     │                                   │                          │                      │
     ├── 读 prompt 模板                   │                          │                      │
     ├── 用英文写好正/负向 prompt          │                          │                      │
@@ -67,5 +67,5 @@ TTS（GPT-SoVITS）需要约 2-3GB。ComfyUI 需要约 4-7GB。
 
 | 任务名 | 频率 | 脚本 | 作用 |
 |------|------|------|------|
-| `llama-watchdog` | 每10分钟 | `qqbot/skills/llama-watchdog.ps1` | llama 健康检查，宕机重启 |
-| `cleanup-qqbot-orphans` | 每小时 | `qqbot/skills/cleanup_orphans.ps1` | 清理孤儿进程、锁文件、过期 .task_flags |
+| `llama-watchdog` | 每10分钟 | `skills/llama-watchdog.ps1` | llama 健康检查，宕机重启 |
+| `cleanup-orphans` | 每小时 | `skills/cleanup_orphans.ps1` | 清理孤儿进程、锁文件、过期 .task_flags |

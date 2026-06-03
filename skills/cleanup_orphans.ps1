@@ -98,7 +98,8 @@ if ($WhatIf) {
 
 # Clean stale lock files
 $LockFiles = @(
-    "C:\Users\TK\.openclaw\workspace\comfyui_output\.comfyui_running.lock"
+    "C:\Users\TK\.openclaw\workspace\comfyui_output\.comfyui_running.lock",
+    "C:\Users\TK\.openclaw\workspace\tts_output\.tts_running.lock"
 )
 foreach ($LockFile in $LockFiles) {
     if (-not (Test-Path $LockFile)) { continue }
@@ -115,7 +116,7 @@ foreach ($LockFile in $LockFiles) {
 }
 
 # ---- Task flag cleanup ----
-$TaskFlagDir = "C:\Users\TK\.openclaw\workspace\qqbot\.task_flags"
+$TaskFlagDir = "C:\Users\TK\.openclaw\workspace\.task_flags"
 if (Test-Path $TaskFlagDir) {
     $FlagCutoff = (Get-Date).AddHours(-1)
     Get-ChildItem "$TaskFlagDir\*.done","$TaskFlagDir\*.meta.json" -ErrorAction SilentlyContinue | Where-Object {
@@ -135,8 +136,7 @@ if (Test-Path $TaskFlagDir) {
 
 # ---- Session registry + orphan files cleanup ----
 $SessionDirs = @(
-    "C:\Users\TK\.openclaw\agents\main\sessions",
-    "C:\Users\TK\.openclaw\agents\qqbot\sessions"
+    "C:\Users\TK\.openclaw\agents\main\sessions"
 )
 
 foreach ($AgentDir in $SessionDirs) {

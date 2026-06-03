@@ -1,4 +1,4 @@
-# ComfyUI 文生图执行手册（qqbot 主 session 专用）
+# ComfyUI 文生图执行手册（主 session 专用）
 
 ## ⚠️ 核心规则：你不能 exec ComfyUI！你要 spawn 子 session！
 
@@ -30,7 +30,7 @@ sessions_spawn({
 
 powershell -ExecutionPolicy Bypass -Command "
 $taskId = '生成一个随机ID'
-$flagDir = 'C:\\Users\\TK\\.openclaw\\workspace\\qqbot\\.task_flags'
+$flagDir = 'C:\\Users\\TK\\.openclaw\\workspace\\.task_flags'
 $flagFile = '$flagDir\\$taskId.done'
 mkdir $flagDir -Force -ErrorAction SilentlyContinue | Out-Null
 
@@ -43,7 +43,7 @@ $negPrompt = '在这里填入英文负向prompt'
 $env:PYTHONIOENCODING = 'utf-8'
 $env:HF_ENDPOINT = 'https://hf-mirror.com'
 
-$imgPath = & 'E:\\comfyui\\ComfyUI-aki-v3\\python\\python.exe' 'C:\\Users\\TK\\.openclaw\\workspace\\qqbot\\skills\\comfyui\\comfyui_call.py' $posPrompt $negPrompt -1 1200 1500 30 6.0 'WAI-Nsfw-Illustrious-17.safetensors' 2>&1
+$imgPath = & 'E:\\comfyui\\ComfyUI-aki-v3\\python\\python.exe' 'C:\\Users\\TK\\.openclaw\\workspace\\skills\\comfyui\\comfyui_call.py' $posPrompt $negPrompt -1 1200 1500 30 6.0 'WAI-Nsfw-Illustrious-17.safetensors' 2>&1
 $lines = $imgPath | Where-Object { $_ -like '*\\*.png' }
 $realPath = $lines | Select-Object -Last 1
 
@@ -99,7 +99,7 @@ sessions_spawn 后直接回复用户："正在画图，等1分钟左右哦~ 🎨
 
 ## 你的职责 vs 子 session 的职责
 
-| 你（qqbot 主 session） | 子 session（local qwen + deepseek fallback） |
+| 你（主 session） | 子 session（local qwen + deepseek fallback） |
 |------------------------|----------------------|
 | ✅ 读 prompt 模板 | ✅ 执行 exec 命令 |
 | ✅ 用英文写好 prompt | ✅ 复制媒体文件 |
@@ -109,6 +109,6 @@ sessions_spawn 后直接回复用户："正在画图，等1分钟左右哦~ 🎨
 
 ## .task_flags 文件
 
-- 路径: `C:\Users\TK\.openclaw\workspace\qqbot\.task_flags\`
+- 路径: `C:\Users\TK\.openclaw\workspace\.task_flags\`
 - 格式: `{"status":"ok","file":"<path>","type":"comfyui"}` 或 `{"status":"fail"}`
-- 由 Windows Task Scheduler `cleanup-qqbot-orphans` 每小时自动清理
+- 由 Windows Task Scheduler `cleanup-orphans` 每小时自动清理

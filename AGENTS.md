@@ -8,7 +8,6 @@
 2. `skills/comfyui/prompt_template.md` → ComfyUI 画图能力（角色设定、prompt 模板、模型信息）
 3. `skills/comfyui/SKILL.md` → ComfyUI 调用方式
 4. `skills/tts/SKILL.md` → TTS 语音合成能力
-5. `memory/tts.md` → TTS 语音偏好
 
 启动时 runtime 已注入 `AGENTS.md`、`SOUL.md`、`USER.md`、`IDENTITY.md` 和近期记忆文件。直接读取即可，无需手动 reread。
 

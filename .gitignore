@@ -1,10 +1,19 @@
 # 记忆文件 - 不提交
 memory/
+!memory/role_play/.gitkeep
 
 # 生成的媒体文件
 media/qqbot/audio/*.wav
 media/qqbot/images/*.png
 media/qqbot/images/*.jpg
+
+# 项目演示视频（允许）
+!media/demo_qqbot.mp4
+
+# 保留 .gitkeep 占位文件
+!media/qqbot/audio/.gitkeep
+!media/qqbot/images/.gitkeep
+!.gitkeep
 
 # 运行时标志
 .task_flags/
@@ -39,10 +48,12 @@ skills/tts/ref_wavs/
 *.zip
 *.7z
 
-# llama 运行日志
-*llama*.txt
+# llama 运行日志（仅根目录）
+/*llama*.txt
 *.log
-*.txt
+
+# 其他临时文本
+*.benchmark.txt
 
 # HuggingFace 临时上传目录
 hf-natsume/upload-to-huggingface.ps1
