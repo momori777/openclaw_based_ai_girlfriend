@@ -37,6 +37,19 @@ LLAMA_PORT = 8080
 HARD_TIMEOUT = 600  # 秒，超过这个时间强制退出
 _deadline = None
 
+import re
+
+def slugify(text, max_len=30):
+    """从文本提取安全文件名标签（英文/数字/中文保留）"""
+    # 保留中英文、数字、空格，其余替换为空格
+    cleaned = re.sub(r'[^\w\u4e00-\u9fff ]', ' ', text, flags=re.ASCII)
+    # 合并空格
+    cleaned = re.sub(r'\s+', '_', cleaned).strip('_')
+    # 截断
+    if len(cleaned) > max_len:
+        cleaned = cleaned[:max_len].rstrip('_')
+    return cleaned or 'untitled'
+
 # ========== 默认参数 ==========
 # 可用模型:
 #   WAI-Nsfw-Illustrious-17.safetensors  (6.5GB, 训练至 2025-05, 层次分明, 推荐)
@@ -327,7 +340,9 @@ def run_txt2img(positive_prompt, negative_prompt, seed, width, height, steps, cf
     from PIL import Image
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    fname = f"comfyui_{int(time.time())}_{seed}.png"
+    # 从 prompt 提取标签用于文件名
+    tag = slugify(positive_prompt.split(',')[0])
+    fname = f"comfyui_{tag}_{seed}.png"
     out_path = os.path.join(OUTPUT_DIR, fname)
 
     for img in images:

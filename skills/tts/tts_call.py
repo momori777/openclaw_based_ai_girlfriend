@@ -46,6 +46,16 @@ LLAMA_PORT = 8080
 # ========== 硬超时（防止子进程卡死不退出，导致 gateway session 锁死） ==========
 HARD_TIMEOUT = 300  # 秒，超过这个时间强制退出
 
+import re
+
+def slugify(text, max_len=20):
+    """从文本提取安全文件名标签（保留中英文/数字）"""
+    cleaned = re.sub(r'[^\w\u4e00-\u9fff ]', ' ', text, flags=re.ASCII)
+    cleaned = re.sub(r'\s+', '_', cleaned).strip('_')
+    if len(cleaned) > max_len:
+        cleaned = cleaned[:max_len].rstrip('_')
+    return cleaned or 'untitled'
+
 
 # ==================== Llama Server 管理 ====================
 
@@ -445,7 +455,8 @@ try:
                     print(f"Applied gain: {gain:.2f}x (original max: {original_max})", file=sys.stderr)
                 
                 os.makedirs(OUTPUT_DIR, exist_ok=True)
-                filename = f"tts_{int(time.time())}_{random.randint(10000,99999)}.wav"
+                tag = slugify(text)
+                filename = f"tts_{tag}_{random.randint(10000,99999)}.wav"
                 out_path = os.path.join(OUTPUT_DIR, filename)
                 scipy.io.wavfile.write(out_path, sr, audio)
                 output_wav_path = out_path
