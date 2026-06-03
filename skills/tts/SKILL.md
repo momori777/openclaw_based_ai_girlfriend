@@ -9,11 +9,12 @@ TTS 推理会杀 llama-server（腾显存）。你用的是 local/qwen3.6-35b—
 
 ## 执行步骤
 
-### STEP 1: 准备好参数
+### STEP 1: 组装参数（你负责写文本、选情绪、选语言）
 
 ```
-确定要合成的文本（默认日文 ja）。
-确定情绪模式（casual/tsundere/romantic/long），不指定则自动匹配。
+根据上下文写好要合成的文本。
+选语言（默认 ja=日文）。
+选情绪模式（casual/tsundere/romantic/long），不指定则自动匹配。
 ```
 
 ### STEP 2: 用 sessions_spawn 创建子 session
@@ -28,7 +29,7 @@ sessions_spawn({
 用 exec 工具运行：
 
 powershell -ExecutionPolicy Bypass -Command "
-$taskId = '生成一个随机ID'
+$taskId = ('tts_' + (Get-Date -Format 'HHmmss') + '_' + [System.Random]::new().Next(1000,9999))
 $flagDir = 'C:\\Users\\TK\\.openclaw\\workspace\\qqbot\\.task_flags'
 $flagFile = '$flagDir\\$taskId.done'
 mkdir $flagDir -Force -ErrorAction SilentlyContinue | Out-Null
@@ -51,16 +52,17 @@ if ($realPath) {
     $mediaFile = Join-Path $mediaDir ('tts_' + (Get-Date -Format 'yyyyMMddHHmmss') + '.wav')
     Copy-Item $realPath $mediaFile -Force
     @{status='ok';file=$mediaFile;type='tts'} | ConvertTo-Json -Compress | Set-Content $flagFile
-    Write-Output \"DONE: $mediaFile\"
+    Write-Output \\\"DONE: $mediaFile\\\"
 } else {
     Write-Output 'FAILED'
 }
 "`,
   taskName: "tts",
   mode: "run",
-  model: "deepseek/deepseek-v4-flash",
-  runTimeoutSeconds: 120,
-  timeoutSeconds: 180
+  model: "local/qwen3.6-35b",
+  fallbacks: ["deepseek/deepseek-v4-flash"],
+  runTimeoutSeconds: 300,
+  timeoutSeconds: 360
 })
 ```
 
@@ -82,23 +84,17 @@ sessions_spawn 后直接回复用户："正在合成语音，稍等哦~ 🎤"
 
 | 参数 | 说明 |
 |------|------|
+| text | 要合成的文本 |
 | text_language | ja=日文, zh=中文, en=英文 |
 | mood | casual=日常温柔, tsundere=傲娇, romantic=深情, long=长句 |
-| 自动匹配 | 无 mood 时根据关键词自动选情绪 |
-
-## 参数速查
-
-| 参数 | 默认值 |
-|------|--------|
-| 语言 | ja (日文) |
-| 情绪 | 自动匹配 |
+| 默认值 | lang=ja, mood=自动匹配 |
 
 ## 你的职责 vs 子 session 的职责
 
-| 你（qqbot 主 session） | 子 session（DeepSeek） |
-|------------------------|----------------------|
-| ✅ 写日文/中文文本 | ✅ 执行 exec 命令 |
-| ✅ 选情绪模式 | ✅ 复制 wav 到 media/qqbot/audio |
+| 你（qqbot 主 session） | 子 session（local qwen + deepseek fallback） |
+|------------------------|---------------------------------------------|
+| ✅ 写好待合成的文本 | ✅ 执行 exec 命令 |
+| ✅ 选语言和情绪模式 | ✅ 复制 wav 到 media/qqbot/audio |
 | ✅ sessions_spawn 子 session | ✅ 写 .task_flags |
 | ✅ 回复用户"正在合成" | ✅ announce 结果 |
 | ❌ 不要 exec Python 脚本！ | |
@@ -109,8 +105,14 @@ sessions_spawn 后直接回复用户："正在合成语音，稍等哦~ 🎤"
 - 格式: `{"status":"ok","file":"<path>","type":"tts"}` 或 `{"status":"fail"}`
 - 由 Windows Task Scheduler `cleanup-qqbot-orphans` 每小时自动清理
 
-## 常见问题
+## 故障排查
 
 ### Q: 子 session 报 `503 Loading model` 怎么办？
-**A**: 这是因为 exec 的 `yieldMs` 太短，子进程还没跑完（TTS 推理 + llama 重启 ≈ 60s），60s 后 exec 超时，子 agent 需要 `process poll` 但 llama 还没恢复。
-**解决**: 确保 exec 调用时 `yieldMs: 180000`（180秒），给 llama 足够时间重启。
+**A**: tts_call.py 已经内置了时序窗口管理——stop_llama → TTS 推理 → start_llama（等端口就绪）→ 输出结果。announce 时 llama 应已在线。
+如果仍然超时：检查 llama 模型加载时间是否超过 180s（`start_llama()` 的超时值）。
+
+### Q: 子进程被 gateway 杀掉/孤儿进程？
+**A**: tts_call.py 已内置 TimeoutGuard(HARD_TIMEOUT=300s) + atexit 清理。超时会 taskkill /f /t 整个进程树并释放锁文件。
+
+### Q: 并发调用导致两个 TTS 同时跑？
+**A**: tts_call.py 有文件锁 (`.tts_running.lock`)，会检测到第一个实例还在跑就跳过第二个。

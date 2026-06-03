@@ -58,8 +58,10 @@ if ($realPath) {
 "`,
   taskName: "comfyui",
   mode: "run",
-  model: "deepseek/deepseek-v4-flash",
-  runTimeoutSeconds: 600
+  model: "local/qwen3.6-35b",
+  fallbacks: ["deepseek/deepseek-v4-flash"],
+  runTimeoutSeconds: 600,
+  timeoutSeconds: 660
 })
 ```
 
@@ -77,6 +79,14 @@ sessions_spawn 后直接回复用户："正在画图，等1分钟左右哦~ 🎨
 你用 <qqmedia> 标签把路径发给用户。
 ```
 
+## 故障排查
+
+### Q: 子进程被 gateway 杀掉/孤儿进程？
+**A**: comfyui_call.py 已内置 TimeoutGuard(HARD_TIMEOUT=600s) + atexit 清理。超时会 taskkill /f /t 整个进程树并释放锁文件。
+
+### Q: 并发调用导致两个 ComfyUI 同时跑？
+**A**: comfyui_call.py 有文件锁 (`.comfyui_running.lock`)，会检测到第一个实例还在跑就跳过第二个。
+
 ## 常用参数速查
 
 | 参数 | 默认值 |
@@ -89,7 +99,7 @@ sessions_spawn 后直接回复用户："正在画图，等1分钟左右哦~ 🎨
 
 ## 你的职责 vs 子 session 的职责
 
-| 你（qqbot 主 session） | 子 session（DeepSeek） |
+| 你（qqbot 主 session） | 子 session（local qwen + deepseek fallback） |
 |------------------------|----------------------|
 | ✅ 读 prompt 模板 | ✅ 执行 exec 命令 |
 | ✅ 用英文写好 prompt | ✅ 复制媒体文件 |
