@@ -163,6 +163,41 @@ def stop_llama():
     return True
 
 
+def _wait_for_llama_ready(host, port, timeout=180):
+    """等待 llama-server 端口打开 + HTTP 健康检查通过"""
+    import urllib.request
+    
+    # 阶段1: 等待端口打开
+    for i in range(timeout):
+        if _port_open("127.0.0.1", port, timeout=2):
+            print(f"[LLAMA] 端口 {port} 已打开 ({i+1}s)", file=sys.stderr, flush=True)
+            break
+        if i % 10 == 9:
+            print(f"[LLAMA] 等待端口中... ({i+1}s)", file=sys.stderr, flush=True)
+    else:
+        print(f"[LLAMA] 警告：{port} 端口未在 {timeout}s 内打开", file=sys.stderr, flush=True)
+        return False
+    
+    # 阶段2: HTTP 健康检查（发送一个 /health 请求确认模型已加载）
+    # 注意：llama-server 的 /health 端点在模型加载完成后才返回 200
+    # 如果端口打开了但模型还在加载，/health 会返回 503
+    print("[LLAMA] 等待模型加载（HTTP 健康检查）...", file=sys.stderr, flush=True)
+    for i in range(timeout):
+        try:
+            resp = urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=5)
+            if resp.status == 200:
+                print(f"[LLAMA] llama-server 完全就绪（模型已加载）！({i+1}s)", file=sys.stderr, flush=True)
+                return True
+        except Exception:
+            pass
+        if i % 5 == 4:
+            print(f"[LLAMA] 模型加载中... ({i+1}s)", file=sys.stderr, flush=True)
+    
+    # 健康检查超时，但端口已打开，保守返回 True（避免误杀）
+    print(f"[LLAMA] 警告：端口已打开但 /health 未响应，模型可能仍在加载", file=sys.stderr, flush=True)
+    return True
+
+
 def start_llama():
     """重启 llama-server（与 restart-llama.ps1 相同的参数）"""
     print("[LLAMA] 启动 llama-server...", file=sys.stderr, flush=True)
@@ -209,16 +244,8 @@ def start_llama():
 
     print(f"[LLAMA] 已启动，PID={proc.pid}，等待端口 {LLAMA_PORT}...", file=sys.stderr, flush=True)
 
-    # 等待端口响应（超时 180s，大模型加载可能需要更长时间）
-    for i in range(180):
-        if _port_open("127.0.0.1", LLAMA_PORT, timeout=2):
-            print(f"[LLAMA] llama-server 就绪！({i+1}s)", file=sys.stderr, flush=True)
-            return True
-        if i % 10 == 9:
-            print(f"[LLAMA] 等待中... ({i+1}s)", file=sys.stderr, flush=True)
-
-    print(f"[LLAMA] 警告：{LLAMA_PORT} 端口未在 180s 内响应，可能启动较慢", file=sys.stderr, flush=True)
-    return False
+    # 使用新的健康检查函数（端口打开 + HTTP /health 通过）
+    return _wait_for_llama_ready("127.0.0.1", LLAMA_PORT, timeout=180)
 
 
 def safe_load_safetensors(ckpt_path):
