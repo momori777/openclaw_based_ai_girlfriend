@@ -1,8 +1,8 @@
 # AI Girlfriend — Shiki Natsume (四季夏目)
 
-**100% 本地部署 · 完全私有化 · 零 API 依赖**
+**100% Local · Fully Private · Zero API Dependencies**
 
-> 所有对话、语音、图片都在你自己的电脑上生成。没有云服务器，没有第三方 API，没有数据泄露风险。你的 AI 女友，只属于你。
+> All conversations, voice, and images are generated on your own machine. No cloud servers, no third-party APIs, no risk of data leakage. Your AI girlfriend belongs to you, and only you.
 
 ---
 
@@ -10,22 +10,22 @@ An AI girlfriend project powered by OpenClaw + QQ Bot + llama.cpp + GPT-SoVITS +
 
 Character: **Shiki Natsume** (四季夏目), from *Starry Moonlit Café & the Butterfly of Death*. Tall, aloof, cold exterior with a hidden warmth. Designed for *girlfriend experience* roleplay — she takes the lead.
 
-## ✨ 为什么选这个项目？
+## ✨ Why This Project?
 
-| 对比 | 云端 AI 女友 | 本项目 |
-|------|-------------|--------|
-| 🛡️ **隐私** | 聊天记录、语音、图片全在厂商服务器 | **一切都在你本地**，没有任何数据离开你的电脑 |
-| 💰 **费用** | 按月订阅 / token 计费，长期不菲 | **免费**，一次部署永久使用（自备硬件） |
-| 🌐 **网络** | 依赖网络，服务器宕机就无法使用 | **断网也能聊**，睡前一键关闭 WiFi 更安心 |
-| 🎛️ **可控性** | prompt/template 由厂商掌控，随时被改 | **你完全控制**所有模型、参数、角色设定 |
-| 🔞 **内容** | 审查严格，动不动封号 | **无审查**，你想聊什么就聊什么 |
-| 🎨 **扩展性** | 只能使用厂商提供的模型和功能 | **自由组合** — 换 LLM、换画图模型、换语音模型 |
+| | Cloud AI Girlfriend | This Project |
+|---|---------------------|--------------|
+| 🛡️ **Privacy** | Chat logs, voice, and images all stored on vendor servers | **Everything stays local** — zero data leaves your machine |
+| 💰 **Cost** | Monthly subscriptions / per-token billing adds up | **Free**, one-time setup, runs forever (bring your own hardware) |
+| 🌐 **Network** | Needs internet; dead if servers go down | **Works offline** — flip off your WiFi and keep chatting |
+| 🎛️ **Control** | Prompts/templates controlled by vendor, can change anytime | **You control** all models, parameters, and character settings |
+| 🔞 **Content** | Heavy censorship, accounts get banned | **No censorship** — talk about whatever you want |
+| 🎨 **Extensibility** | Locked into vendor models and features | **Mix and match** — swap LLMs, image models, voice models freely |
 
 ## 🎬 Demo
 
-https://github.com/user-attachments/assets/placeholder-video-url
+![QQ Bot Demo](media/demo_qqbot.gif)
 
-> 👆 QQ Bot 实机演示：文字聊天 + TTS 语音 + ComfyUI 画图 + 角色记忆
+> 👆 Live QQ Bot demo: text chat + TTS voice + ComfyUI image generation + character memory
 
 ## Hardware
 
@@ -161,8 +161,8 @@ AI_Girlfriend/                        # OpenClaw workspace root
 │   ├── audio/                        # TTS voice output
 │   └── images/                       # ComfyUI image output
 ├── docs/
-│   ├── telegram-setup.md             # Telegram Bot 配置指南
-│   └── qqbot-setup.md                # QQ Bot 配置指南
+│   ├── telegram-setup.md             # Telegram Bot setup guide
+│   └── qqbot-setup.md                # QQ Bot setup guide
 └── skills/
     ├── tts/
     │   ├── SKILL.md                  # TTS invocation guide
@@ -193,9 +193,9 @@ AI_Girlfriend/                        # OpenClaw workspace root
 
 ## Quick Start
 
-### 🚀 All-in-One (推荐)
+### 🚀 All-in-One (Recommended)
 
-**一行命令，从零到跑通所有 AI 女友功能：**
+**One command, from scratch to a fully functional AI girlfriend:**
 
 **Windows:**
 ```powershell
@@ -207,13 +207,13 @@ powershell -File setup-all.ps1
 bash setup-all.sh
 ```
 
-自动串行：环境检查 → 模型下载 → llama.cpp 配置 → OpenClaw 安装 → 工作区部署 → 路径检查 → 启动 → 验证。
+Automated pipeline: environment check → model download → llama.cpp setup → OpenClaw install → workspace deploy → path check → launch → verify.
 
-> 支持断点续传。参数：`--skip-model-download`, `--skip-llama-setup`, `--skip-openclaw-setup`, `--dry-run`, `--no-start`
+> Supports resume from breakpoint. Flags: `--skip-model-download`, `--skip-llama-setup`, `--skip-openclaw-setup`, `--dry-run`, `--no-start`
 
 ---
 
-### 分步执行 (如果你想手动控制每一环)
+### Step-by-Step (if you prefer manual control)
 
 ### 0. Setup OpenClaw
 
@@ -265,10 +265,6 @@ bash download-models.sh
 ```
 
 The script downloads all 5 model files (~29 GB) from HuggingFace, skips existing files, and reports progress.
-
-> 中文用户看这里：运行 `download-models.ps1` (Windows) 或 `download-models.sh` (Linux/Mac) 一键下载全部模型。
-
-如果huggingface被墙的话，去我度盘https://pan.baidu.com/s/1sLeSyVp76yzWcR3Q4pX0kA?pwd=0721下五个模型
 
 See [`models.yaml`](models.yaml) for full model details and manual download commands.
 
@@ -347,29 +343,29 @@ schtasks /create /tn "cleanup-qqbot-orphans" `
 
 Apply `config-patch.json` via OpenClaw: `gateway config.patch.apply`.
 
-## QQ Bot 配置
+## QQ Bot Setup
 
-参见 [`docs/qqbot-setup.md`](docs/qqbot-setup.md)。
+See [`docs/qqbot-setup.md`](docs/qqbot-setup.md).
 
-快速配置：
+Quick setup:
 
-1. 前往 [QQ 开放平台](https://q.qq.com/) 创建私域机器人，获取 **AppID** + **ClientSecret**
-2. 编辑 `config-qqbot.json`，替换 `<YOUR_QQ_APP_ID>` 和 `<YOUR_QQ_CLIENT_SECRET>`
-3. 应用配置：`openclaw gateway call config.patch.apply --json --params (Get-Content config-qqbot.json -Raw)`
-4. QQ Bot channel 支持热更新，无需重启
+1. Go to [QQ Open Platform](https://q.qq.com/) to create a private-domain bot. Get your **AppID** + **ClientSecret**
+2. Edit `config-qqbot.json`, replacing `<YOUR_QQ_APP_ID>` and `<YOUR_QQ_CLIENT_SECRET>`
+3. Apply config: `openclaw gateway call config.patch.apply --json --params (Get-Content config-qqbot.json -Raw)`
+4. QQ Bot channel supports hot-reload — no restart needed
 
-## Telegram 配置
+## Telegram Setup
 
-参见 [`docs/telegram-setup.md`](docs/telegram-setup.md)。
+See [`docs/telegram-setup.md`](docs/telegram-setup.md).
 
-快速配置：
+Quick setup:
 
-1. 通过 [@BotFather](https://t.me/BotFather) 创建 Bot，获取 Token
-2. 编辑 `config-telegram.json`，替换 `<YOUR_BOT_TOKEN>`
-3. 应用配置：`openclaw gateway call config.patch.apply --json --params (Get-Content config-telegram.json -Raw)`
-4. 重启：`openclaw gateway restart`
+1. Create a bot via [@BotFather](https://t.me/BotFather) and get the Token
+2. Edit `config-telegram.json`, replacing `<YOUR_BOT_TOKEN>`
+3. Apply config: `openclaw gateway call config.patch.apply --json --params (Get-Content config-telegram.json -Raw)`
+4. Restart: `openclaw gateway restart`
 
-参考了 [arlanrakh/talk-to-girlfriend-ai](https://github.com/arlanrakh/talk-to-girlfriend-ai) 的 Telegram 集成设计。
+Inspired by the Telegram integration design from [arlanrakh/talk-to-girlfriend-ai](https://github.com/arlanrakh/talk-to-girlfriend-ai).
 
 ## Architecture
 
