@@ -392,7 +392,7 @@ OpenClaw Gateway (qqbot + telegram channel)
 4. Full 8 GB VRAM freed → TTS/ComfyUI inference
 5. `start_llama()` restarts llama-server (~12s load + ~3s warmup)
 6. Sub-session writes `.task_flags` → announces back to main session
-7. Main session reads media files → sends via `<qqmedia>` to user
+7. Main session reads media files → sends via `<qqmedia>` (QQ) + `MEDIA:` (Telegram) to user
 
 ## ⚠️ Important Notes
 

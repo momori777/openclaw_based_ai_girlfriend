@@ -80,16 +80,18 @@ sessions_spawn 后直接回复用户："正在合成语音，稍等哦~ 🎤"
 
 你必须：
 1. 从 announce 文本中提取 "DONE: 后的文件路径"
-2. 用 <qqmedia> 标签发语音
+2. 用 MEDIA 指令 + <qqmedia> 标签同时发语音
 3. 不要转发子 session 的日志文本
 
-格式: <qqmedia>C:\Users\TK\.openclaw\media\qqbot\audio\tts_20260604xxxxxx.wav</qqmedia>
+📦 同时输出两种格式（Telegram + QQ 都能收到语音）：
+MEDIA:C:\Users\TK\.openclaw\media\qqbot\audio\tts_20260604xxxxxx.wav
+<qqmedia>C:\Users\TK\.openclaw\media\qqbot\audio\tts_20260604xxxxxx.wav</qqmedia>
 
 ⚠️ 注意：
-- 路径必须是完整绝对路径，不能是相对路径
-- <qqmedia> 标签单独一行
-- 标签前后不要加空格
-- 可以先说一句话，再用 <qqmedia> 发语音
+- MEDIA: 指令必须单独一行，在行首，不在代码块里
+- <qqmedia> 标签也单独一行
+- 路径必须是完整绝对路径
+- 可以先说一句话，再用 MEDIA 和 <qqmedia> 发语音
 ```
 
 ## 参数速查

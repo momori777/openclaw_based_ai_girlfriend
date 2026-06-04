@@ -15,8 +15,10 @@ media/qqbot/images/*.jpg
 !media/qqbot/images/.gitkeep
 !.gitkeep
 
-# 运行时标志
-.task_flags/
+# 敏感配置（含 token）不提交
+config-telegram.json
+config-qqbot.json
+config-patch.json
 
 # OpenClaw 状态
 .openclaw/

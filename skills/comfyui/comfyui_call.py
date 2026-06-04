@@ -396,9 +396,11 @@ def run_txt2img(positive_prompt, negative_prompt, seed, width, height, steps, cf
     from PIL import Image
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    # 从 prompt 提取标签用于文件名
+    # 从 prompt 提取标签 + 时间戳作为文件名
+    from datetime import datetime
     tag = slugify(positive_prompt.split(',')[0])
-    fname = f"comfyui_{tag}_{seed}.png"
+    ts = datetime.now().strftime('%Y%m%d%H%M%S')
+    fname = f"comfyui_{tag}_{ts}.png"
     out_path = os.path.join(OUTPUT_DIR, fname)
 
     for img in images:

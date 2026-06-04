@@ -80,16 +80,18 @@ sessions_spawn 后直接回复用户："正在画图，等1分钟左右哦~ 🎨
 
 你必须：
 1. 从 announce 文本中提取 "DONE: 后的文件路径"
-2. 用 <qqmedia> 标签发图
+2. 用 MEDIA 指令 + <qqmedia> 标签同时发图
 3. 不要转发子 session 的日志文本
 
-格式: <qqmedia>C:\Users\TK\.openclaw\media\qqbot\images\comfyui_20260604xxxxxxxx.png</qqmedia>
+📦 同时输出两种格式（Telegram + QQ 都能收到图片）：
+MEDIA:C:\Users\TK\.openclaw\media\qqbot\images\comfyui_20260604xxxxxxxx.png
+<qqmedia>C:\Users\TK\.openclaw\media\qqbot\images\comfyui_20260604xxxxxxxx.png</qqmedia>
 
 ⚠️ 注意：
-- 路径必须是完整绝对路径，不能是相对路径
-- <qqmedia> 标签单独一行
-- 标签前后不要加空格
-- 可以先发一句文字描述（不要是子 session 的日志），再用 <qqmedia> 标签发图
+- MEDIA: 指令必须单独一行，在行首，不在代码块里
+- <qqmedia> 标签也单独一行
+- 路径必须是完整绝对路径
+- 可以先发一句文字描述（不要是子 session 的日志），再用 MEDIA 和 <qqmedia> 标签发图
 ```
 
 ## 故障排查
