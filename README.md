@@ -380,15 +380,15 @@ OpenClaw Gateway (qqbot + telegram channel)
   │   ├── Prompt / TTS text generation
   │   └── sessions_spawn → sub-sessions
   │
-  └── Sub-sessions (deepseek/deepseek-v4-flash)
-      ├── exec tts_call.py → stop llama → GPT-SoVITS → start llama → announce
-      └── exec comfyui_call.py → stop llama → ComfyUI → start llama → announce
+  ├── Sub-sessions (local/qwen3.6-35b, deepseek as fallback)
+      ├── exec run_comfyui.ps1 → stop llama → ComfyUI → start llama → announce
+      └── exec run_tts.ps1 → stop llama → GPT-SoVITS → start llama → announce
 ```
 
 **VRAM Orchestration Flow**:
-1. Main session receives user request → assembles PS command
-2. `sessions_spawn(mode="run")` creates DeepSeek sub-session
-3. Sub-session execs Python script → `stop_llama()` kills llama-server
+1. Main session receives user request → assembles command
+2. `sessions_spawn(mode="run")` creates local model sub-session
+3. Sub-session execs PS script → `stop_llama()` kills llama-server
 4. Full 8 GB VRAM freed → TTS/ComfyUI inference
 5. `start_llama()` restarts llama-server (~12s load + ~3s warmup)
 6. Sub-session writes `.task_flags` → announces back to main session
@@ -397,7 +397,7 @@ OpenClaw Gateway (qqbot + telegram channel)
 ## ⚠️ Important Notes
 
 - Llama-server is offline for ~60–120s during TTS/ComfyUI inference — conversation pauses
-- Sub-sessions **must use DeepSeek model** (does not depend on local LLM)
+- Sub-sessions use **local model** (same as main), with DeepSeek as optional fallback — no network dependency
 - Llama-server does not support cross-turn prompt cache reuse (SSM architecture limitation) — use periodic `/reset`
 - All model files protected by `.gitignore`, not committed to git
 - GPT-SoVITS weights are self-trained and not distributed here — train with your own voice data
