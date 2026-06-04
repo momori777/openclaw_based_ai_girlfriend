@@ -157,7 +157,7 @@ def stop_llama():
         if not _port_open("127.0.0.1", LLAMA_PORT, timeout=1):
             print(f"[LLAMA] 端口 {LLAMA_PORT} 已释放 ({i+1}s)", file=sys.stderr, flush=True)
             return True
-        time.sleep(1)
+        time.sleep(0.5)
 
     print(f"[LLAMA] 警告：端口 {LLAMA_PORT} 仍未释放，继续执行", file=sys.stderr, flush=True)
     return True
@@ -193,8 +193,36 @@ def _wait_for_llama_ready(host, port, timeout=180):
         if i % 5 == 4:
             print(f"[LLAMA] 模型加载中... ({i+1}s)", file=sys.stderr, flush=True)
     
-    # 健康检查超时，但端口已打开，保守返回 True（避免误杀）
-    print(f"[LLAMA] 警告：端口已打开但 /health 未响应，模型可能仍在加载", file=sys.stderr, flush=True)
+    # 阶段3: 发一个真实的 completion 请求确认模型能正常响应
+    # /health 200 不一定意味着模型已加载完毕，需要实际请求验证
+    print("[LLAMA] 验证模型可用（发送测试请求）...", file=sys.stderr, flush=True)
+    import json as _json
+    test_payload = _json.dumps({
+        "prompt": "hi",
+        "n_predict": 1,
+        "temperature": 0,
+        "cache_prompt": False
+    }).encode('utf-8')
+    for i in range(min(timeout, 60)):
+        try:
+            req = urllib.request.Request(
+                f"http://127.0.0.1:{port}/completion",
+                data=test_payload,
+                headers={"Content-Type": "application/json", "Authorization": "Bearer 123456"}
+            )
+            resp = urllib.request.urlopen(req, timeout=10)
+            if resp.status == 200:
+                body = resp.read()
+                data = _json.loads(body)
+                if data.get("content") or data.get("stop"):
+                    print(f"[LLAMA] 模型完全就绪（completion 验证通过）！({i+1}s)", file=sys.stderr, flush=True)
+                    return True
+        except Exception:
+            pass
+        if i % 5 == 4:
+            print(f"[LLAMA] 等待模型可生成... ({i+1}s)", file=sys.stderr, flush=True)
+    
+    print(f"[LLAMA] 警告：/completion 未在 {min(timeout, 60)}s 内响应", file=sys.stderr, flush=True)
     return True
 
 
@@ -210,7 +238,7 @@ def start_llama():
             if not _port_open("127.0.0.1", LLAMA_PORT, timeout=1):
                 print(f"[LLAMA] 端口已释放 ({i+1}s)", file=sys.stderr, flush=True)
                 break
-            time.sleep(1)
+            time.sleep(0.5)
 
     args = [
         LLAMA_EXE_PATH,
@@ -232,6 +260,7 @@ def start_llama():
         "--parallel", "1",
         "--kv-unified",
         "--no-mmap",
+        "--no-warmup",
     ]
 
     os.makedirs(LLAMA_LOG_DIR, exist_ok=True)

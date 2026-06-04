@@ -144,9 +144,72 @@ def stop_llama():
         if not _port_open("127.0.0.1", LLAMA_PORT, timeout=1):
             print(f"[LLAMA] 端口 {LLAMA_PORT} 已释放 ({i+1}s)", file=sys.stderr, flush=True)
             return True
-        time.sleep(1)
+        time.sleep(0.5)
 
     print(f"[LLAMA] 警告：端口 {LLAMA_PORT} 仍未释放，继续执行", file=sys.stderr, flush=True)
+    return True
+
+
+def _wait_for_llama_ready(host, port, timeout=180):
+    """等待 llama-server 端口打开 + HTTP 健康检查通过"""
+    import urllib.request
+    
+    # 阶段1: 等待端口打开
+    for i in range(timeout):
+        if _port_open("127.0.0.1", port, timeout=2):
+            print(f"[LLAMA] 端口 {port} 已打开 ({i+1}s)", file=sys.stderr, flush=True)
+            break
+        if i % 10 == 9:
+            print(f"[LLAMA] 等待端口中... ({i+1}s)", file=sys.stderr, flush=True)
+    else:
+        print(f"[LLAMA] 警告：{port} 端口未在 {timeout}s 内打开", file=sys.stderr, flush=True)
+        return False
+    
+    # 阶段2: HTTP 健康检查（发送一个 /health 请求确认模型已加载）
+    # 注意：llama-server 的 /health 端点在模型加载完成后才返回 200
+    # 如果端口打开了但模型还在加载，/health 会返回 503
+    print("[LLAMA] 等待模型加载（HTTP 健康检查）...", file=sys.stderr, flush=True)
+    for i in range(timeout):
+        try:
+            resp = urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=5)
+            if resp.status == 200:
+                print(f"[LLAMA] llama-server 完全就绪（模型已加载）！({i+1}s)", file=sys.stderr, flush=True)
+                return True
+        except Exception:
+            pass
+        if i % 5 == 4:
+            print(f"[LLAMA] 模型加载中... ({i+1}s)", file=sys.stderr, flush=True)
+    
+    # 阶段3: 发一个真实的 completion 请求确认模型能正常响应
+    # /health 200 不一定意味着模型已加载完毕，需要实际请求验证
+    print("[LLAMA] 验证模型可用（发送测试请求）...", file=sys.stderr, flush=True)
+    import json as _json
+    test_payload = _json.dumps({
+        "prompt": "hi",
+        "n_predict": 1,
+        "temperature": 0,
+        "cache_prompt": False
+    }).encode('utf-8')
+    for i in range(min(timeout, 60)):
+        try:
+            req = urllib.request.Request(
+                f"http://127.0.0.1:{port}/completion",
+                data=test_payload,
+                headers={"Content-Type": "application/json", "Authorization": "Bearer 123456"}
+            )
+            resp = urllib.request.urlopen(req, timeout=10)
+            if resp.status == 200:
+                body = resp.read()
+                data = _json.loads(body)
+                if data.get("content") or data.get("stop"):
+                    print(f"[LLAMA] 模型完全就绪（completion 验证通过）！({i+1}s)", file=sys.stderr, flush=True)
+                    return True
+        except Exception:
+            pass
+        if i % 5 == 4:
+            print(f"[LLAMA] 等待模型可生成... ({i+1}s)", file=sys.stderr, flush=True)
+    
+    print(f"[LLAMA] 警告：/completion 未在 {min(timeout, 60)}s 内响应", file=sys.stderr, flush=True)
     return True
 
 
@@ -162,7 +225,7 @@ def start_llama():
             if not _port_open("127.0.0.1", LLAMA_PORT, timeout=1):
                 print(f"[LLAMA] 端口已释放 ({i+1}s)", file=sys.stderr, flush=True)
                 break
-            time.sleep(1)
+            time.sleep(0.5)
 
     args = [
         LLAMA_EXE_PATH,
@@ -184,6 +247,7 @@ def start_llama():
         "--parallel", "1",
         "--kv-unified",
         "--no-mmap",
+        "--no-warmup",
     ]
 
     os.makedirs(LLAMA_LOG_DIR, exist_ok=True)
@@ -196,16 +260,8 @@ def start_llama():
 
     print(f"[LLAMA] 已启动，PID={proc.pid}，等待端口 {LLAMA_PORT}...", file=sys.stderr, flush=True)
 
-    # 等待端口响应（超时 180s，大模型加载可能需要更长时间）
-    for i in range(180):
-        if _port_open("127.0.0.1", LLAMA_PORT, timeout=2):
-            print(f"[LLAMA] llama-server 就绪！({i+1}s)", file=sys.stderr, flush=True)
-            return True
-        if i % 10 == 9:
-            print(f"[LLAMA] 等待中... ({i+1}s)", file=sys.stderr, flush=True)
-
-    print(f"[LLAMA] 警告：{LLAMA_PORT} 端口未在 180s 内响应，可能启动较慢", file=sys.stderr, flush=True)
-    return False
+    # 使用两阶段健康检查（端口打开 + HTTP /health 200）
+    return _wait_for_llama_ready("127.0.0.1", LLAMA_PORT, timeout=180)
 
 
 # ========== TimeoutGuard 类（与 ComfyUI 一致） ==========
