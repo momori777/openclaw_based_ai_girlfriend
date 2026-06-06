@@ -1,0 +1,38 @@
+{
+    "mouseover": [
+        {
+            "selector": "#showInfoBtn",
+            "text": ["查看最新吐槽和站内信息"]
+        },
+		{
+            "selector": "#showTalkBtn",
+            "text": ["要和我聊天吗？"]
+        },
+		{
+            "selector": "#hideButton",
+            "text": ["隐藏惠惠，希望隐藏后我们还能再见面！"]
+        },
+		{
+            "selector": "#musicButton",
+            "text": ["给页面加点音乐吗？"]
+        },
+        {
+            "selector": "#youduButton",
+            "text": ["按钮有毒，癫痫患者不要开启！！！<br>点一下开启，再点一下可以关闭。"]
+        },
+		{
+            "selector": ".itemarticle-tips a",
+            "text": ["要看看 {text} 么？"]
+        },
+        {
+            "selector": ".searchbox",
+            "text": ["在找什么东西呢，需要帮忙吗？"]
+        }
+    ],
+    "click": [
+        {
+            "selector": "#landlord #live2d",
+            "text": ["有什么事要吩咐吗？", "那个……如果太过强硬，惠惠会不自觉长出角的！","如果一直这样的话，惠惠可是会生气的哦！", "头晕目眩", "要是能再温柔一点的话……"]
+        }
+    ]
+}

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>夏目 Live2D</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; }
+  body { background: radial-gradient(ellipse at center, #2d2d44 0%, #1a1a2e 100%); display: flex; align-items: center; justify-content: center; }
+  #overlay-text {
+    position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.78); color: #fff; font-size: 18px;
+    padding: 12px 28px; border-radius: 24px;
+    font-family: 'Yu Gothic', 'Meiryo UI', sans-serif;
+    opacity: 0; transition: opacity 0.35s;
+    pointer-events: none; z-index: 100; max-width: 85vw; text-align: center;
+  }
+  #overlay-text.visible { opacity: 1; }
+  #status-dot {
+    position: fixed; bottom: 16px; right: 16px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #f44; z-index: 100; transition: background 0.3s;
+  }
+  #status-dot.online { background: #4f4; box-shadow: 0 0 8px #4f4; }
+</style>
+</head>
+<body>
+<canvas id="live2d-canvas" style="width:100%;height:100%"></canvas>
+<div id="overlay-text"></div>
+<div id="status-dot"></div>
+
+<!-- Cubism 2 shim: pixi-live2d-display checks for Cubism 2 globals even with Cubism4 models -->
+<script>
+(function(){
+  var w=window;
+  w.Live2D={};
+  w.Live2DMotion=function(){};
+  w.Live2DMotion.prototype={updateParam:function(){},update:function(){},setFadeIn:function(){},setFadeOut:function(){},setLoop:function(){},isFinished:function(){return true}};
+  w.Live2DModelWebGL=function(){};
+  w.Live2DModelWebGL.prototype={load:function(){},setTexture:function(){},setParamFloat:function(){},getParamFloat:function(){return 0},draw:function(){},setMatrix:function(){}};
+  w.L2D={};
+  w.AMotion=function(){};
+  w.PhysicsHair=function(){};
+  w.PhysicsHair.SRC_TO_X='SRC_TO_X';
+  w.PhysicsHair.SRC_TO_Y='SRC_TO_Y';
+  w.PhysicsHair.SRC_TO_G_ANGLE='SRC_TO_G_ANGLE';
+  w.PhysicsHair.TARGET_FROM_ANGLE='TARGET_FROM_ANGLE';
+  w.PhysicsHair.TARGET_FROM_ANGLE_V='TARGET_FROM_ANGLE_V';
+  w.PhysicsHair.SRC_TO_X_OFFSET='SRC_TO_X_OFFSET';
+  w.PhysicsHair.SRC_TO_Y_OFFSET='SRC_TO_Y_OFFSET';
+  w.PhysicsHair.Src=function(){};
+  w.PhysicsHair.Src.prototype={setParam:function(){},getParam:function(){return 0}};
+  w.PhysicsHair.Target=function(){};
+  w.PhysicsHair.Target.prototype={setParam:function(){},getParam:function(){return 0}};
+  w.PhysicsHair.prototype={update:function(){},setup:function(){},setWinSize:function(){}};
+  console.log('Cubism2 shim loaded');
+})();
+</script>
+<!-- Cubism Core (CDN 5.1 - matched to pixi-live2d-display) -->
+<script src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
+<!-- PixiJS v7 UMD -->
+<script src="https://cdn.jsdelivr.net/npm/pixi.js@7.4.2/dist/pixi.min.js"></script>
+<!-- pixi-live2d-display v0.3.1 UMD -->
+<script src="https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.3.1/dist/index.min.js"></script>
+
+<script>
+(function(){
+  'use strict';
+
+  const MODEL_PATH = 'model-hack/ren.model3.json';
+  const WS_URL = 'ws://' + location.hostname + ':19201';
+
+  const canvas = document.getElementById('live2d-canvas');
+  const overlay = document.getElementById('overlay-text');
+  const statusDot = document.getElementById('status-dot');
+
+  let app, model;
+  let ws = null;
+  let isSpeaking = false;
+  let speakTimer = null;
+  let speakPhase = 0;
+  let overlayTimer = null;
+
+  const EXPRESSION_MAP = {
+    neutral:'exp_01', happy:'exp_02', sad:'exp_03',
+    angry:'exp_04', surprised:'exp_05',
+    exp_01:'exp_01', exp_02:'exp_02', exp_03:'exp_03',
+    exp_04:'exp_04', exp_05:'exp_05',
+  };
+
+  // ====== WebSocket ======
+  function connectWS() {
+    if (ws) { try { ws.close(); } catch(e){} ws = null; }
+    try { ws = new WebSocket(WS_URL); } catch(e) { return; }
+    ws.onopen = function() {
+      console.log('WS connected');
+      statusDot.className = 'online';
+      ws.send(JSON.stringify({type:'connected'}));
+    };
+    ws.onmessage = function(e) {
+      var msg;
+      try { msg = JSON.parse(e.data); } catch(_) { return; }
+      console.log('WS:', msg.type, msg);
+      switch (msg.type) {
+        case 'expression': setExpression(msg.name); break;
+        case 'motion': playMotion(msg.name); break;
+        case 'message':
+          showOverlay(msg.text, msg.duration || 5000);
+          playRandomMotion();
+          startSpeaking();
+          setTimeout(stopSpeaking, msg.duration || 3000);
+          break;
+        case 'speak_start':
+          startSpeaking();
+          if (msg.text) showOverlay(msg.text, msg.duration || 6000);
+          break;
+        case 'speak_end': stopSpeaking(); break;
+        case 'emotion':
+          if (msg.expression) setExpression(msg.expression);
+          if (msg.text) showOverlay(msg.text, 4000);
+          playRandomMotion();
+          break;
+        case 'reset':
+          setExpression('neutral');
+          stopSpeaking();
+          overlay.classList.remove('visible');
+          break;
+      }
+    };
+    ws.onclose = function() { statusDot.className = ''; setTimeout(connectWS, 5000); };
+    ws.onerror = function() { statusDot.className = ''; };
+  }
+
+  // ====== Lip Sync ======
+  function speakLoop() {
+    if (!isSpeaking || !model || !model.internalModel) return;
+    speakPhase += 0.13;
+    var core = model.internalModel.coreModel;
+    var mouth = 0.25 + Math.abs(Math.sin(speakPhase) * 0.55) + Math.abs(Math.cos(speakPhase * 2.3) * 0.2);
+    try { core.setParameterValueById('ParamMouthOpenY', Math.min(mouth, 1.0)); core.setParameterValueById('ParamMouthForm', mouth * 0.35); } catch(e) {}
+    speakTimer = setTimeout(speakLoop, 60);
+  }
+  function startSpeaking() { if (isSpeaking) return; isSpeaking = true; speakLoop(); }
+  function stopSpeaking() {
+    isSpeaking = false;
+    if (speakTimer) { clearTimeout(speakTimer); speakTimer = null; }
+    if (model && model.internalModel) {
+      try { model.internalModel.coreModel.setParameterValueById('ParamMouthOpenY', 0); } catch(e) {}
+    }
+  }
+
+  // ====== Expression ======
+  function setExpression(name) {
+    if (!model || !model.internalModel) return;
+    var exp = EXPRESSION_MAP[name] || name;
+    if (!exp) return;
+    try {
+      var em = model.internalModel.motionManager.expressionManager;
+      // 0.3.1 API: expressionManager has setter .expression
+      // Also try setExpression method
+      if (typeof em.setExpression === 'function') {
+        em.setExpression(exp);
+      } else if (typeof em.expression !== 'undefined') {
+        // Might be a property setter
+        em.expression = exp;
+      } else {
+        // Fallback: set directly on motionManager
+        model.internalModel.motionManager.expression = exp;
+      }
+      console.log('Expression set:', exp, '→ current:', em.currentExpression || em.expression);
+    } catch(e) { console.warn('Expression failed:', e); }
+  }
+
+  // ====== Motion ======
+  function playMotion(name) {
+    if (!model || !model.internalModel) return;
+    try {
+      var mm = model.internalModel.motionManager;
+      // 0.3.1 API: startMotion or startRandomMotion
+      if (typeof mm.startRandomMotion === 'function') {
+        mm.startRandomMotion('', 0);
+      } else if (typeof mm.startMotion === 'function') {
+        mm.startMotion('', 0);
+      } else if (mm.motionGroups) {
+        var groups = mm.motionGroups;
+        var nonIdle = Object.keys(groups).filter(function(k) { return k !== 'Idle' && Array.isArray(groups[k]) && groups[k].length > 0; });
+        if (nonIdle.length > 0 && typeof mm.startMotion === 'function') {
+          mm.startMotion(nonIdle[0], 0);
+        }
+      }
+    } catch(e) { console.warn('Motion failed:', e); }
+  }
+  function playRandomMotion() { playMotion('random'); }
+
+  // ====== Overlay ======
+  function showOverlay(text, dur) {
+    if (!dur) dur = 4000;
+    overlay.textContent = text;
+    overlay.classList.add('visible');
+    if (overlayTimer) clearTimeout(overlayTimer);
+    overlayTimer = setTimeout(function() { overlay.classList.remove('visible'); }, dur);
+  }
+
+  // ====== Init ======
+  async function init() {
+    console.log('Starting app...');
+    var w = window.innerWidth;
+    var h = window.innerHeight;
+
+    app = new PIXI.Application({
+      view: canvas, width: w, height: h,
+      backgroundColor: 0x000000, backgroundAlpha: 0,
+      antialias: true,
+      resolution: window.devicePixelRatio || 1,
+      autoDensity: true,
+    });
+    app.renderer.view.style.backgroundColor = 'transparent';
+
+    window.addEventListener('resize', function() {
+      app.renderer.resize(window.innerWidth, window.innerHeight);
+      if (model) { model.position.set(window.innerWidth / 2, window.innerHeight * 0.42); }
+    });
+
+    // Load model
+    console.log('Loading model:', MODEL_PATH);
+    try {
+      model = await PIXI.live2d.Live2DModel.from(MODEL_PATH, { autoInteract: true });
+      console.log('Model loaded!', model);
+    } catch(e) {
+      console.error('Model load failed:', e);
+      statusDot.className = '';
+      return;
+    }
+
+    // Position
+    var scale = Math.min(w / 1800, h / 1100, 0.22);
+    model.scale.set(scale);
+    model.anchor.set(0.5, 0.5);
+    model.position.set(w / 2, h * 0.42);
+    model.interactive = true;
+    model.on('pointerdown', function() { playRandomMotion(); });
+    app.stage.addChild(model);
+
+    // Debug model internals
+    try {
+      var mm = model.internalModel.motionManager;
+      var em = mm.expressionManager;
+      console.log('MotionManager keys:', Object.keys(mm));
+      console.log('ExpressionManager:', em ? Object.keys(em).filter(function(k){return typeof em[k]==='function'}).slice(0,10) : 'N/A');
+      console.log('Expression current:', typeof em !== 'undefined' && em !== null ? (em.currentExpression || em._currentExpression || '?') : 'N/A');
+      console.log('Expression list:', em ? (em.definitions || em._definitions || em.expressions) : 'N/A');
+      console.log('Motion groups:', mm.motionGroups ? Object.keys(mm.motionGroups) : 'N/A');
+      console.log('Defs:', mm.definitions);
+    } catch(e) { console.warn('Debug err:', e); }
+
+    // Animation loop
+    var breathAccum = 0;
+    var blinkTimer = 0;
+    var nextBlink = 3000;
+    var blinking = false;
+    var blinkStart = 0;
+
+    app.ticker.add(function() {
+      if (!model || !model.internalModel) return;
+      var core = model.internalModel.coreModel;
+      var dt = app.ticker.elapsedMS;
+
+      // Breath
+      breathAccum += dt * 0.001 * 0.7;
+      try { core.setParameterValueById('ParamBreath', Math.sin(breathAccum) * 0.04 + 0.5); } catch(e) {}
+
+      // Blink
+      blinkTimer += dt;
+      if (!blinking && blinkTimer > nextBlink) { blinking = true; blinkStart = 0; }
+      if (blinking) {
+        blinkStart += dt;
+        var t = Math.min(blinkStart / 300, 1);
+        var eye;
+        if (t < 0.25) eye = 1 - (t / 0.25);
+        else if (t < 0.65) eye = 0;
+        else eye = (t - 0.65) / 0.35;
+        try { core.setParameterValueById('ParamEyeLOpen', eye); core.setParameterValueById('ParamEyeROpen', eye); } catch(e) {}
+        if (t >= 1) { blinking = false; blinkTimer = 0; nextBlink = 2000 + Math.random() * 4000; }
+      }
+
+      // Mouth close when not speaking
+      if (!isSpeaking) {
+        try {
+          core.setParameterValueById('ParamMouthOpenY', (core.getParameterValueById('ParamMouthOpenY') || 0) * 0.85);
+          core.setParameterValueById('ParamMouthForm', (core.getParameterValueById('ParamMouthForm') || 0) * 0.85);
+        } catch(e) {}
+      }
+    });
+
+    // Mouse tracking
+    document.addEventListener('mousemove', function(e) {
+      if (!model || !model.internalModel) return;
+      var core = model.internalModel.coreModel;
+      var x = (e.clientX / window.innerWidth) * 2 - 1;
+      var y = (e.clientY / window.innerHeight) * 2 - 1;
+      try {
+        core.setParameterValueById('ParamAngleX', x * 8);
+        core.setParameterValueById('ParamAngleY', y * 6 - 2);
+        core.setParameterValueById('ParamBodyAngleX', x * 4);
+        core.setParameterValueById('ParamBodyAngleY', y * 3);
+        core.setParameterValueById('ParamEyeBallX', x * 0.8);
+        core.setParameterValueById('ParamEyeBallY', y * 0.8);
+      } catch(e) {}
+    });
+
+    // Set default expression
+    setTimeout(function() { setExpression('neutral'); }, 500);
+
+    connectWS();
+    console.log('Ready!');
+    statusDot.className = 'online';
+  }
+
+  init().catch(function(e) {
+    console.error('Fatal error:', e);
+    statusDot.className = '';
+  });
+
+})();
+</script>
+</body>
+</html>

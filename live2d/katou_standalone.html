@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>加藤惠 Standalone</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #1a1a2e; }
+  #live2d { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+  #info { position: fixed; top: 10px; left: 10px; color: #0f0; font-family: monospace; font-size: 14px; z-index: 10; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px; }
+  #err { position: fixed; bottom: 10px; left: 10px; color: #f44; font-family: monospace; font-size: 14px; z-index: 10; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px; max-width: 80vw; }
+</style>
+</head>
+<body>
+<div id="live2d"></div>
+<div id="info">Loading...</div>
+<div id="err"></div>
+
+<script src="./live2d.min.js"></script>
+
+<script>
+const info = document.getElementById('info');
+const err = document.getElementById('err');
+
+// loadlive2d(id, model_json_url, scale)
+loadlive2d('live2d', 'model/加藤惠live2d/model/katou_01/katou_01.model.json', function() {
+  info.textContent = 'SUCCESS! Katou Megumi is running!';
+});
+</script>
+</body>
+</html>

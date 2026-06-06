@@ -67,14 +67,14 @@ Thumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 
-# Live2D 运行时（含大模型文件 / node_modules）
-live2d/
-ren_pro_jp/
+# Live2D 运行时 node_modules（大且可重建）
+live2d/node_modules/
+ren_pro_jp/node_modules/
 
-# Live2D 测试文件
-*katou*
-test_katou*
-index_test.png
+# Live2D 测试文件（项目根目录下的临时测试）
+/katou_*
+/test_katou*
+/index_test.png
 
 # Node.js
 node_modules/
