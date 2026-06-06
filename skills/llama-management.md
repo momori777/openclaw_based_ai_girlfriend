@@ -10,10 +10,10 @@ TTS（GPT-SoVITS）需要约 2-3GB。ComfyUI 需要约 4-7GB。
 
 ### 职责分-工
 
-| 主 session（local/qwen） | 子 session（DeepSeek） |
+| 主 session（local/qwen） | 子 session（local/qwen + deepseek fallback） |
 |-------------------------|----------------------|
 | 读模板/TTS文本、写英文 prompt | exec PowerShell |
-| sessions_spawn 子 session | 跑 Python 脚本（停llama→推理→起llama） |
+| sessions_spawn 子 session | 跑 PS 脚本（停llama→推理→起llama） |
 | 回复用户"正在处理" | 复制媒体文件到 media/qqbot/ |
 | 收 announce → 包装发用户 | 写 .task_flags ({"status":"ok","file":"<path>","type":"tts|comfyui"}) |
 | ❌ 不 exec Python 脚本 | announce 结果回主 session |
@@ -21,20 +21,20 @@ TTS（GPT-SoVITS）需要约 2-3GB。ComfyUI 需要约 4-7GB。
 ### 为什么这样分
 
 - **主 session 用 local/qwen3.6-35b** —— 停 llama 就死，不能自己做 GPU 推理
-- **子 session 用 deepseek/deepseek-v4-flash** —— 不依赖本地 llama，停 llama 不影响
+- **子 session 用本地模型（local/qwen3.6-35b）** —— 完全独立运行，deepseek 仅作网络不可用时的 fallback
 - **主 session 写好 prompt** —— 所有"思考"工作在停 llama 前完成
-- **子 session 只 exec** —— 不需要判断、不需要写 prompt，只跑命令
+- **子 session 只 exec PS 脚本** —— 不需要判断、不需要写 prompt，只跑命令
 
 ### 流程
 
 ```
-主 session (local/qwen)         子 session (DeepSeek)         Python 脚本           Windows Task Scheduler
+主 session (local/qwen)         子 session (local qwen)       PS 脚本               Windows Task Scheduler
     │                                   │                          │                      │
     ├── 读 prompt 模板                   │                          │                      │
     ├── 用英文写好正/负向 prompt          │                          │                      │
     ├── sessions_spawn ────────────────► │                          │                      │
     │   task: 完整 PS 命令（参数已就位）   │                          │                      │
-    │   model: deepseek                  │                          │                      │
+    │   model: local/qwen3.6-35b        │                          │                      │
     │                                   │                          │                      │
     ├── 回复"正在画图/合成"               │                          │                      │
     │   (正常结束 turn)                   │                          │                      │
@@ -60,7 +60,7 @@ TTS（GPT-SoVITS）需要约 2-3GB。ComfyUI 需要约 4-7GB。
 
 1. **主 session 不要 sessions_yield** — yield 持锁，和子 session 的 announce 抢死锁
 2. **主 session 不要 exec Python 脚本** — SKILL.md 写得再清楚也可能被忽视，但必须强调
-3. **子 session 模型必须是 deepseek/deepseek-v4-flash** — sessions_spawn 的 model 参数
+3. **子 session 用 local/qwen3.6-35b，deepseek 仅作 fallback** — sessions_spawn 的 model 参数 + fallbacks 字段
 4. **子 session 的 task 是完整 PS 命令** — 不需要子 session 自己思考，只 exec
 
 ## Windows Task Scheduler（零 LLM API 消耗）

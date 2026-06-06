@@ -132,29 +132,30 @@ Qwen3.6 MoE uses SSM (Gated Delta Net) hybrid attention with `--kv-unified`.
 
 ```
 AI_Girlfriend/                        # OpenClaw workspace root
+├── configure.ps1                     # 🛠 Interactive path config wizard (auto-replaces all paths)
+├── config.json                       # Generated config from configure.ps1
 ├── download-models.ps1               # One-click model download (Windows)
 ├── download-models.sh                # One-click model download (Linux/macOS)
 ├── setup-llama.ps1                   # Auto-detect HW + configure llama.cpp (Win)
 ├── setup-llama.sh                    # Auto-detect HW + configure llama.cpp (Linux/macOS)
 ├── setup-openclaw.ps1                # One-click OpenClaw install + deploy (Win)
 ├── setup-openclaw.sh                 # One-click OpenClaw install + deploy (Linux/macOS)
-├── config-telegram.json              # Telegram Bot config patch
 ├── setup-all.ps1                     # 🚀 All-in-One mega script (Windows)
 ├── setup-all.sh                      # 🚀 All-in-One mega script (Linux/macOS)
-├── start-girlfriend.ps1              # Daily quick-start — auto-generated (Win)
-├── start-girlfriend.sh               # Daily quick-start — auto-generated (Linux/macOS)
+├── config-qqbot.json                 # QQ Bot config patch
+├── config-telegram.json              # Telegram Bot config patch
+├── config-patch.json                 # OpenClaw LLM config patch
 ├── AGENTS.md                         # Agent behavior rules
 ├── SOUL.md                           # Character personality
 ├── IDENTITY.md                       # Character identity
 ├── USER.md                           # User info (modify for yourself)
 ├── HEARTBEAT.md                      # Heartbeat config
 ├── TOOLS.md                          # Tool quick reference
-├── config-patch.json                 # OpenClaw LLM config patch
-├── config-telegram.json              # Telegram Bot config patch
-├── config-qqbot.json                 # QQ Bot config patch
 ├── models.yaml                       # Model catalog + download links
 ├── README.md                         # This file
 ├── .gitignore
+├── live2d/                           # 🚧 Live2D character visualization (not yet implemented)
+├── ren_pro_jp/                       # Ren'Py dialog engine (companion to Live2D, not yet implemented)
 ├── memory/                           # [.gitignore] Runtime memory
 │   └── role_play/                    # Roleplay conversation logs
 ├── media/qqbot/                      # [.gitignore] Generated media
@@ -166,10 +167,12 @@ AI_Girlfriend/                        # OpenClaw workspace root
 └── skills/
     ├── tts/
     │   ├── SKILL.md                  # TTS invocation guide
+    │   ├── run_tts.ps1               # TTS launcher script
     │   ├── tts_call.py               # GPT-SoVITS inference (incl. llama start/stop)
     │   └── ref_wavs/                 # Reference audio (14 wavs by emotion, prepare your own)
     ├── comfyui/
     │   ├── SKILL.md                  # ComfyUI invocation guide
+    │   ├── run_comfyui.ps1           # ComfyUI launcher script
     │   ├── comfyui_call.py           # ComfyUI inference (incl. llama start/stop)
     │   ├── prompt_template.md        # Character prompt template
     │   ├── custom_prompt.txt         # Custom extra prompt
@@ -308,18 +311,36 @@ Output in `llama-config/`:
 - `hardware-report.md` — Your machine's detected specs
 - Plus systemd service (Linux) or launchd plist (macOS) for auto-start
 
-### 3. Update Paths
+### 3. Configure Paths ⚡ Interactive wizard recommended
+
+**Replace all paths in one go:**
+
+`powershell
+powershell -File configure.ps1
+`
+
+The interactive configuration wizard asks for your local paths, then auto-replaces all absolute paths in every script.
+Supports the \-DryRun\ flag to preview changes without writing.
+
+> Config is saved to \config.json\ and loaded automatically on the next run.
+
+---
+
+<details>
+<summary>📝 Manual config (click to expand)</summary>
 
 All absolute paths in the following files must be updated to match your environment:
 
 | File | Key Variables |
 |------|--------------|
-| `skills/tts/tts_call.py` | `WEBUI_DIR`, `OUTPUT_DIR`, `LLAMA_EXE_PATH`, `LLAMA_MODEL_PATH`, `RESTART_SCRIPT` |
-| `skills/tts/SKILL.md` | Python path + project path in PS commands |
-| `skills/comfyui/comfyui_call.py` | `COMFYUI_ROOT`, `PYTHON_PATH`, `CHECKPOINTS_DIR`, `OUTPUT_DIR`, `LLAMA_*` |
-| `skills/comfyui/SKILL.md` | Python path + project path in PS commands |
-| `skills/llama-watchdog.ps1` | llama-server path, restart script path |
-| `skills/cleanup_orphans.ps1` | Project directory, comfyui_output directory |
+| \skills/tts/tts_call.py\ | \WEBUI_DIR\, \OUTPUT_DIR\, \LLAMA_EXE_PATH\, \LLAMA_MODEL_PATH\, \RESTART_SCRIPT\ |
+| \skills/tts/run_tts.ps1\ | \\, \\, \\, \\ |
+| \skills/comfyui/comfyui_call.py\ | \COMFYUI_ROOT\, \PYTHON_PATH\, \CHECKPOINTS_DIR\, \OUTPUT_DIR\, \LLAMA_*\ |
+| \skills/comfyui/run_comfyui.ps1\ | \\, \\, \\, \\ |
+| \skills/llama-watchdog.ps1\ | llama-server path, restart script path |
+| \skills/cleanup_orphans.ps1\ | Project directory, task_flags directory |
+
+</details>
 
 ### 4. Deploy to OpenClaw
 
@@ -397,7 +418,7 @@ OpenClaw Gateway (qqbot + telegram channel)
 ## ⚠️ Important Notes
 
 - Llama-server is offline for ~60–120s during TTS/ComfyUI inference — conversation pauses
-- Sub-sessions use **local model** (same as main), with DeepSeek as optional fallback — no network dependency
+- Sub-sessions use **local model** (same as main), with DeepSeek as optional fallback — fully offline capable, zero network dependency
 - Llama-server does not support cross-turn prompt cache reuse (SSM architecture limitation) — use periodic `/reset`
 - All model files protected by `.gitignore`, not committed to git
 - GPT-SoVITS weights are self-trained and not distributed here — train with your own voice data

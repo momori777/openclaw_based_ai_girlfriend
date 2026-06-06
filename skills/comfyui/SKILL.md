@@ -14,7 +14,7 @@ ComfyUI 推理会杀 llama-server（腾显存）。你用的是 local/qwen3.6-35
 3. PS 脚本：只读 stdout 路径 → Copy-Item → 写 flag → 等 llama /health → 输出 DONE
 4. 子 session exec 返回时本地 llama 已完全就绪 → announce 不会 503
 
-# 子 session 用本地 qwen3.6-35b + deepseek fallback
+# 子 session 用本地 qwen3.6-35b（独立运行），deepseek 仅作 fallback
 
 ## 执行步骤
 
@@ -57,8 +57,7 @@ powershell -ExecutionPolicy Bypass -File "C:\Users\TK\.openclaw\workspace\skills
   mode: "run",
   model: "local/qwen3.6-35b",
   fallbacks: ["deepseek/deepseek-v4-flash"],
-  runTimeoutSeconds: 600,
-  timeoutSeconds: 660
+  runTimeoutSeconds: 600
 })
 ```
 
@@ -117,7 +116,7 @@ MEDIA:C:\Users\TK\.openclaw\media\qqbot\images\comfyui_20260604xxxxxxxx.png
 
 ## 你的职责 vs 子 session 的职责
 
-| 你（主 session） | 子 session（local qwen + deepseek fallback） |
+| 你（主 session） | 子 session（local qwen，deepseek fallback） |
 |------------------------|----------------------|
 | ✅ 读 prompt 模板 | ✅ 执行 exec 命令 |
 | ✅ 用英文写好 prompt | ✅ 复制媒体文件 |

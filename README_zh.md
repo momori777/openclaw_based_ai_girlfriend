@@ -134,30 +134,31 @@ Qwen3.6 MoE 使用 SSM（门控 Delta 网络）混合注意力，配合 `--kv-un
 
 ```
 AI_Girlfriend/                        # OpenClaw 工作区根目录
+├── configure.ps1                     # 🛠 交互式路径配置向导（自动替换所有路径）
+├── config.json                       # configure.ps1 生成的配置文件
 ├── download-models.ps1               # 一键模型下载（Windows）
 ├── download-models.sh                # 一键模型下载（Linux/macOS）
 ├── setup-llama.ps1                   # 自动检测硬件 + 配置 llama.cpp（Win）
 ├── setup-llama.sh                    # 自动检测硬件 + 配置 llama.cpp（Linux/macOS）
 ├── setup-openclaw.ps1                # 一键 OpenClaw 安装 + 部署（Win）
 ├── setup-openclaw.sh                 # 一键 OpenClaw 安装 + 部署（Linux/macOS）
-├── config-telegram.json              # Telegram Bot 配置补丁
 ├── setup-all.ps1                     # 🚀 一键全家桶脚本（Windows）
 ├── setup-all.sh                      # 🚀 一键全家桶脚本（Linux/macOS）
-├── start-girlfriend.ps1              # 每日快速启动 — 自动生成（Win）
-├── start-girlfriend.sh               # 每日快速启动 — 自动生成（Linux/macOS）
+├── config-qqbot.json                 # QQ Bot 配置补丁
+├── config-telegram.json              # Telegram Bot 配置补丁
+├── config-patch.json                 # OpenClaw LLM 配置补丁
 ├── AGENTS.md                         # 代理行为规则
 ├── SOUL.md                           # 角色性格设定
 ├── IDENTITY.md                       # 角色身份
 ├── USER.md                           # 用户信息（请修改成你自己的）
 ├── HEARTBEAT.md                      # 心跳配置
 ├── TOOLS.md                          # 工具速查
-├── config-patch.json                 # OpenClaw LLM 配置补丁
-├── config-telegram.json              # Telegram Bot 配置补丁
-├── config-qqbot.json                 # QQ Bot 配置补丁
 ├── models.yaml                       # 模型目录 + 下载链接
 ├── README.md                         # 项目说明（英文版）
 ├── README_zh.md                      # 本文件（中文版）
 ├── .gitignore
+├── live2d/                           # 🚧 Live2D 角色可视化（尚未正式实装）
+├── ren_pro_jp/                       # Ren'Py 对话引擎（配套 Live2D，未实装）
 ├── memory/                           # [.gitignore] 运行时记忆
 │   └── role_play/                    # 角色扮演对话记录
 ├── media/qqbot/                      # [.gitignore] 生成的媒体文件
@@ -169,10 +170,12 @@ AI_Girlfriend/                        # OpenClaw 工作区根目录
 └── skills/
     ├── tts/
     │   ├── SKILL.md                  # TTS 调用指南
+    │   ├── run_tts.ps1               # TTS 启动脚本
     │   ├── tts_call.py               # GPT-SoVITS 推理（含 llama 启停）
     │   └── ref_wavs/                 # 参考音频（14 条按情绪分类，请自备）
     ├── comfyui/
     │   ├── SKILL.md                  # ComfyUI 调用指南
+    │   ├── run_comfyui.ps1           # ComfyUI 启动脚本
     │   ├── comfyui_call.py           # ComfyUI 推理（含 llama 启停）
     │   ├── prompt_template.md        # 角色 prompt 模板
     │   ├── custom_prompt.txt         # 自定义额外 prompt
@@ -313,18 +316,36 @@ bash setup-llama.sh --model /path/to/custom.gguf
 - `hardware-report.md` — 你机器的检测配置
 - 外加 systemd 服务（Linux）或 launchd plist（macOS）实现自启动
 
-### 3. 更新路径
+### 3. 配置路径 ⚡ 推荐用交互式向导
+
+**一键搞定所有路径替换：**
+
+`powershell
+powershell -File configure.ps1
+`
+
+交互式配置向导会问你本地路径，然后自动替换所有脚本中的硬编码路径。
+支持 \-DryRun\ 参数先预览不写入。
+
+> 配置自动保存到 \config.json\，下次运行会自动读取。
+
+---
+
+<details>
+<summary>📝 手动配置（点击展开）</summary>
 
 以下文件中所有绝对路径需要改成你自己的环境：
 
 | 文件 | 关键变量 |
 |------|---------|
-| `skills/tts/tts_call.py` | `WEBUI_DIR`、`OUTPUT_DIR`、`LLAMA_EXE_PATH`、`LLAMA_MODEL_PATH`、`RESTART_SCRIPT` |
-| `skills/tts/SKILL.md` | PS 命令中的 Python 路径 + 项目路径 |
-| `skills/comfyui/comfyui_call.py` | `COMFYUI_ROOT`、`PYTHON_PATH`、`CHECKPOINTS_DIR`、`OUTPUT_DIR`、`LLAMA_*` |
-| `skills/comfyui/SKILL.md` | PS 命令中的 Python 路径 + 项目路径 |
-| `skills/llama-watchdog.ps1` | llama-server 路径、重启脚本路径 |
-| `skills/cleanup_orphans.ps1` | 项目目录、comfyui_output 目录 |
+| \skills/tts/tts_call.py\ | \WEBUI_DIR\、\OUTPUT_DIR\、\LLAMA_EXE_PATH\、\LLAMA_MODEL_PATH\、\RESTART_SCRIPT\ |
+| \skills/tts/run_tts.ps1\ | \\、\\、\\、\\ |
+| \skills/comfyui/comfyui_call.py\ | \COMFYUI_ROOT\、\PYTHON_PATH\、\CHECKPOINTS_DIR\、\OUTPUT_DIR\、\LLAMA_*\ |
+| \skills/comfyui/run_comfyui.ps1\ | \\、\\、\\、\\ |
+| \skills/llama-watchdog.ps1\ | llama-server 路径、重启脚本路径 |
+| \skills/cleanup_orphans.ps1\ | 项目目录、task_flags 目录 |
+
+</details>
 
 ### 4. 部署到 OpenClaw
 
@@ -385,24 +406,24 @@ OpenClaw Gateway（qqbot + telegram channel）
   │   ├── Prompt / TTS 文本生成
   │   └── sessions_spawn → 子会话
   │
-  └── 子会话（deepseek/deepseek-v4-flash）
-      ├── exec tts_call.py → 停止 llama → GPT-SoVITS → 启动 llama → 通知
-      └── exec comfyui_call.py → 停止 llama → ComfyUI → 启动 llama → 通知
+  ├── 子会话（local/qwen3.6-35b，deepseek 作为 fallback）
+      ├── exec run_tts.ps1 → 停止 llama → GPT-SoVITS → 启动 llama → 通知
+      └── exec run_comfyui.ps1 → 停止 llama → ComfyUI → 启动 llama → 通知
 ```
 
 **显存调度流程**：
 1. 主会话收到用户请求 → 组装 PS 命令
-2. `sessions_spawn(mode="run")` 创建 DeepSeek 子会话
-3. 子会话执行 Python 脚本 → `stop_llama()` 停止 llama-server
+2. `sessions_spawn(mode="run")` 创建本地模型子会话（DeepSeek 作为 fallback）
+3. 子会话 exec PS 脚本 → `stop_llama()` 停止 llama-server
 4. 8 GB 显存全部释放 → 执行 TTS/ComfyUI 推理
 5. `start_llama()` 重启 llama-server（~12 秒加载 + ~3 秒预热）
-6. 子会话写入 `.task_flags` → 通知主会话
-7. 主会话读取媒体文件 → 通过 `<qqmedia>` 发送给用户
+6. 子会话写入 `.task_flags` → announce 回主会话
+7. 主会话读取媒体文件 → 通过 `<qqmedia>` (QQ) + `MEDIA:` (Telegram) 发送给用户
 
 ## ⚠️ 重要提示
 
 - TTS/ComfyUI 推理期间 llama-server 离线约 60–120 秒 — 对话会暂停
-- 子会话**必须使用 DeepSeek 模型**（不依赖本地 LLM）
+- 子会话使用**本地模型**（与主会话相同），DeepSeek 作为可选 fallback — 无需网络也可独立运行
 - llama-server 不支持跨轮 prompt 缓存复用（SSM 架构限制）— 请定期使用 `/reset`
 - 所有模型文件受 `.gitignore` 保护，不会提交到 git
 - GPT-SoVITS 权重为自己训练的，此处不提供 — 请用你自己的语音数据训练

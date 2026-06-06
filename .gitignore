@@ -71,6 +71,15 @@ $RECYCLE.BIN/
 live2d/
 ren_pro_jp/
 
+# Live2D 测试文件
+*katou*
+test_katou*
+index_test.png
+
+# Node.js
+node_modules/
+package-lock.json
+
 # IDE
 .vscode/
 .idea/

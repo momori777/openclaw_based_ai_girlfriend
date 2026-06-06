@@ -6,7 +6,7 @@
 - **必须等前一个子任务 announce 完成（收到 "DONE:"）后，才能 spawn 下一个**
 - **两个任务都用 sessions_spawn(mode="run")，绝对不能用主 session 内联 exec！**
   - 主 session 用 local/qwen3.6-35b（llama），你一 exec Python 脚本就会杀 llama → 你自己的 LLM 也会断
-  - 子 session 用 local/qwen3.6-35b + deepseek fallback，被杀了还能 fallback
+  - 子 session 用 local/qwen3.6-35b（独立运行），deepseek 仅作 fallback
 
 ## 记忆目录
 
