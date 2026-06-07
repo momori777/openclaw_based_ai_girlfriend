@@ -6,7 +6,7 @@
 
 ---
 
-基于 OpenClaw + QQ Bot + llama.cpp + GPT-SoVITS + ComfyUI 的 AI 女友项目，完全运行在你自己的电脑上。
+基于 OpenClaw + QQ Bot + Telegram Bot + llama.cpp + GPT-SoVITS + ComfyUI + Sakura 桌宠的 AI 女友项目，完全运行在你自己的电脑上。
 
 角色：**四季夏目**（Shiki Natsume），出自《星月咖啡馆与死之蝶》。高挑、冷淡，外冷内热。设定为「女友体验」角色扮演 — 她来主导。
 
@@ -41,6 +41,7 @@
 - 💬 **QQ + Telegram 双通道** — 通过 OpenClaw Gateway 集成 QQ Bot + Telegram Bot
 - 🎤 **TTS 语音合成** — 本地 GPT-SoVITS 推理，日语语音（14 条参考音频）
 - 🎨 **AI 图片生成** — 本地 ComfyUI 推理，SDXL/Illustrious 模型
+- 🖥️ **Sakura 桌宠** — PySide6 桌面伙伴，支持主动关怀、屏幕观察与本地 LLM 生命周期感知
 - 🧠 **显存调度** — 8 GB 显存下自动协调 llama-server ↔ TTS/ComfyUI
 - 💾 **角色记忆** — 对话摘要持久化到 `memory/role_play/`
 
@@ -181,6 +182,12 @@ AI_Girlfriend/                        # OpenClaw 工作区根目录
     │   ├── custom_prompt.txt         # 自定义额外 prompt
     │   ├── apron_negative.txt        # 围裙场景负面 prompt
     │   └── apron_prompt.txt          # 围裙场景正面 prompt
+    ├── sakura/                       # Sakura 桌宠（PySide6 GUI）
+    │   ├── SKILL.md                  # Sakura 技能文档
+    │   ├── main.py                   # 应用入口
+    │   ├── install.bat               # Windows 依赖安装
+    │   ├── start.bat                 # Windows 启动脚本
+    │   └── app/                      # 源码（agent、UI、LLM、语音、插件等）
     ├── llama-management.md           # 显存管理架构文档
     ├── llama-watchdog.ps1            # Llama 健康检查
     └── cleanup_orphans.ps1           # 孤儿进程/锁/会话清理
@@ -196,6 +203,7 @@ AI_Girlfriend/                        # OpenClaw 工作区根目录
 | [llama.cpp](https://github.com/ggml-org/llama.cpp) | b9222 | 本地 LLM 推理服务 |
 | [GPT-SoVITS v2](https://github.com/RVC-Boss/GPT-SoVITS) | v2pro-20250604 | TTS 语音合成 |
 | [ComfyUI](https://github.com/comfyanonymous/ComfyUI) | aki-v3 | 图片生成引擎 |
+| [Sakura 桌宠](https://github.com/Rvosy/Sakura) | v0.9.6-dev | 桌面伙伴 GUI（@Rvosy 授权引用，Issue #38） |
 
 ## 快速开始
 
@@ -396,24 +404,33 @@ schtasks /create /tn "cleanup-qqbot-orphans" `
 ## 架构
 
 ```
-用户（QQ / Telegram）
-  │
-  ▼
-OpenClaw Gateway（qqbot + telegram channel）
-  │
-  ├── 主会话（local/qwen3.6-35b）
-  │   ├── 角色扮演对话（QQ + Telegram）
-  │   ├── Prompt / TTS 文本生成
-  │   └── sessions_spawn → 子会话
-  │
-  ├── 子会话（local/qwen3.6-35b，deepseek 作为 fallback）
-      ├── exec run_tts.ps1 → 停止 llama → GPT-SoVITS → 启动 llama → 通知
-      └── exec run_comfyui.ps1 → 停止 llama → ComfyUI → 启动 llama → 通知
+用户（QQ / Telegram） ──────── Sakura 桌宠（PySide6，可选）
+  │                                    │
+  ▼                                    ▼
+OpenClaw Gateway              LocalLlamaClient
+  │                            （生命周期感知）
+  ▼                                    │
+  ┌───── llama-server :8080（Qwen3.6-35B）─────┐
+  │          所有 skill 共用一颗大脑            │
+  ├──────────────────────────────────────────────┤
+  │                                              │
+  ├── 主会话（角色扮演，QQ + Telegram）          │
+  ├── TTS（杀 llama → GPU 推理 → 重启）         │
+  ├── ComfyUI（杀 llama → GPU 推理 → 重启）     │
+  └── Sakura（感知断线 → 等待恢复 → 自动续连）   │
 ```
+
+**三个 Skill，一颗大脑**：
+
+| Skill | 位置 | 与 llama 的交互方式 |
+|-------|------|-------------------|
+| **TTS** | `skills/tts/` | 杀 llama → GPT-SoVITS 推理 → 重启 llama + 等待 `/health` → `/completion` |
+| **ComfyUI** | `skills/comfyui/` | 杀 llama → 图片生成 → 重启 llama + 等待 `/health` → `/completion` |
+| **Sakura** | `skills/sakura/` | 发请求到 llama；检测断线 → 轮询 `/health` + `/completion` → 自动恢复（不杀 llama） |
 
 **显存调度流程**：
 1. 主会话收到用户请求 → 组装 PS 命令
-2. `sessions_spawn(mode="run")` 创建本地模型子会话（DeepSeek 作为 fallback）
+2. `sessions_spawn(mode="run")` 创建本地模型子会话
 3. 子会话 exec PS 脚本 → `stop_llama()` 停止 llama-server
 4. 8 GB 显存全部释放 → 执行 TTS/ComfyUI 推理
 5. `start_llama()` 重启 llama-server（~12 秒加载 + ~3 秒预热）
@@ -426,4 +443,9 @@ OpenClaw Gateway（qqbot + telegram channel）
 - 子会话使用**本地模型**（与主会话相同），DeepSeek 作为可选 fallback — 无需网络也可独立运行
 - llama-server 不支持跨轮 prompt 缓存复用（SSM 架构限制）— 请定期使用 `/reset`
 - 所有模型文件受 `.gitignore` 保护，不会提交到 git
-- GPT-SoVITS 权重为自己训练的，此处不提供 — 请用你自己的语音数据训练
+- GPT-SoVITS 语音权重为自训练，不在此分发 — 请使用自己的语音数据训练
+- **Sakura 桌宠**通过 `LocalLlamaClient` 共用 llama-server — TTS/ComfyUI 运行时自动静默等待，恢复后自动续连
+
+## 🙏 致谢
+
+- [@Rvosy](https://github.com/Rvosy) — [Sakura 桌宠](https://github.com/Rvosy/Sakura) 原作者，已授权本项目引用（Issue #38）

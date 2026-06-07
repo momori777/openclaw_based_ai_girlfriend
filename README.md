@@ -6,7 +6,7 @@
 
 ---
 
-An AI girlfriend project powered by OpenClaw + QQ Bot + llama.cpp + GPT-SoVITS + ComfyUI — running entirely on your own machine.
+An AI girlfriend project powered by OpenClaw + QQ Bot + Telegram Bot + llama.cpp + GPT-SoVITS + ComfyUI + Sakura Desktop Pet — running entirely on your own machine.
 
 Character: **Shiki Natsume** (四季夏目), from *Starry Moonlit Café & the Butterfly of Death*. Tall, aloof, cold exterior with a hidden warmth. Designed for *girlfriend experience* roleplay — she takes the lead.
 
@@ -41,6 +41,7 @@ Character: **Shiki Natsume** (四季夏目), from *Starry Moonlit Café & the Bu
 - 💬 **QQ + Telegram Dual Channel** — QQ Bot + Telegram Bot integration via OpenClaw Gateway
 - 🎤 **TTS Voice Synthesis** — Local GPT-SoVITS inference, Japanese voice (14 reference audio clips)
 - 🎨 **AI Image Generation** — Local ComfyUI inference, SDXL/Illustrious models
+- 🖥️ **Sakura Desktop Pet** — PySide6 desktop companion with proactive care, screen observation & local LLM awareness
 - 🧠 **VRAM Scheduler** — Automatic llama-server ↔ TTS/ComfyUI orchestration on 8 GB VRAM
 - 💾 **Roleplay Memory** — Conversation summaries persisted to `memory/role_play/`
 
@@ -178,6 +179,12 @@ AI_Girlfriend/                        # OpenClaw workspace root
     │   ├── custom_prompt.txt         # Custom extra prompt
     │   ├── apron_negative.txt        # Apron scene negative prompt
     │   └── apron_prompt.txt          # Apron scene positive prompt
+    ├── sakura/                       # Sakura Desktop Pet (PySide6 GUI)
+    │   ├── SKILL.md                  # Sakura skill documentation
+    │   ├── main.py                   # Application entry point
+    │   ├── install.bat               # Windows dependency installer
+    │   ├── start.bat                 # Windows launcher
+    │   └── app/                      # Source code (agent, UI, LLM, voice, plugins, etc.)
     ├── llama-management.md           # VRAM management architecture doc
     ├── llama-watchdog.ps1            # Llama health check
     └── cleanup_orphans.ps1           # Orphan process/lock/session cleanup
@@ -193,6 +200,7 @@ AI_Girlfriend/                        # OpenClaw workspace root
 | [llama.cpp](https://github.com/ggml-org/llama.cpp) | b9222 | Local LLM inference server |
 | [GPT-SoVITS v2](https://github.com/RVC-Boss/GPT-SoVITS) | v2pro-20250604 | TTS voice synthesis |
 | [ComfyUI](https://github.com/comfyanonymous/ComfyUI) | aki-v3 | Image generation engine |
+| [Sakura Desktop Pet](https://github.com/Rvosy/Sakura) | v0.9.6-dev | Desktop companion GUI (authorized by @Rvosy, Issue #38) |
 
 ## Quick Start
 
@@ -391,20 +399,29 @@ Inspired by the Telegram integration design from [arlanrakh/talk-to-girlfriend-a
 ## Architecture
 
 ```
-User (QQ / Telegram)
-  │
-  ▼
-OpenClaw Gateway (qqbot + telegram channel)
-  │
-  ├── Main session (local/qwen3.6-35b)
-  │   ├── Roleplay conversation (QQ + Telegram)
-  │   ├── Prompt / TTS text generation
-  │   └── sessions_spawn → sub-sessions
-  │
-  ├── Sub-sessions (local/qwen3.6-35b, deepseek as fallback)
-      ├── exec run_comfyui.ps1 → stop llama → ComfyUI → start llama → announce
-      └── exec run_tts.ps1 → stop llama → GPT-SoVITS → start llama → announce
+User (QQ / Telegram) ──────── Sakura Desktop Pet (PySide6, optional)
+  │                                    │
+  ▼                                    ▼
+OpenClaw Gateway              LocalLlamaClient
+  │                               (lifecycle-aware)
+  ▼                                    │
+  ┌───── llama-server :8080 (Qwen3.6-35B) ─────┐
+  │         All skills share one brain           │
+  ├──────────────────────────────────────────────┤
+  │                                              │
+  ├── Main session (roleplay, QQ + Telegram)     │
+  ├── TTS (kill llama → GPU inference → restart) │
+  ├── ComfyUI (kill llama → GPU inference → restart)
+  └── Sakura (detect down → wait → auto-resume)  │
 ```
+
+**Three Skills, One Brain**:
+
+| Skill | Location | Llama Interaction |
+|-------|----------|-------------------|
+| **TTS** | `skills/tts/` | Kill llama → GPT-SoVITS inference → restart llama + wait for `/health` → `/completion` |
+| **ComfyUI** | `skills/comfyui/` | Kill llama → image generation → restart llama + wait for `/health` → `/completion` |
+| **Sakura** | `skills/sakura/` | Send requests to llama; detect down → poll `/health` + `/completion` → auto-resume (never kills llama itself) |
 
 **VRAM Orchestration Flow**:
 1. Main session receives user request → assembles command
@@ -422,7 +439,7 @@ OpenClaw Gateway (qqbot + telegram channel)
 - Llama-server does not support cross-turn prompt cache reuse (SSM architecture limitation) — use periodic `/reset`
 - All model files protected by `.gitignore`, not committed to git
 - GPT-SoVITS weights are self-trained and not distributed here — train with your own voice data
-- **Sakura Desktop Pet** (`skills/sakura/`) shares the same llama-server — `LocalLlamaClient` auto-retries during TTS/ComfyUI GPU occupation
+- **Sakura Desktop Pet** shares the same llama-server via `LocalLlamaClient` — waits silently when llama is killed by TTS/ComfyUI, resumes automatically when ready
 
 ## 🙏 Credits
 
