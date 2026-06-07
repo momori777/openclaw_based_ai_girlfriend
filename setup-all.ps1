@@ -15,6 +15,7 @@ param(
     [switch]$SkipModelDownload,
     [switch]$SkipLlamaSetup,
     [switch]$SkipOpenClawSetup,
+    [switch]$SkipSakuraSetup,
     [switch]$SkipBotConfig,
     [string]$QQAppId = "",
     [string]$QQClientSecret = "",
@@ -22,6 +23,7 @@ param(
     [string]$WorkspacePath = "",
     [string]$GPTSoVitsDir = "",
     [string]$ComfyUIDir = "",
+    [string]$SakuraReleaseUrl = "",
     [switch]$DryRun,
     [switch]$NoStart
 )
@@ -34,12 +36,12 @@ function wok { param($t) Write-Host "  ✓ $t" -ForegroundColor Green }
 function warn { param($t) Write-Host "  ⚠ $t" -ForegroundColor Yellow }
 function err { param($t) Write-Host "  ✗ $t" -ForegroundColor Red }
 function info { param($t) Write-Host "  $t" -ForegroundColor Gray }
-function step { param($n,$t) Write-Host "[$n/8] $t" -ForegroundColor Yellow }
+function step { param($n,$t) Write-Host "[$n/9] $t" -ForegroundColor Yellow }
 
 Clear-Host 2>$null
 Write-Host "╔═══════════════════════════════════════════════════════════════════╗" -ForegroundColor Magenta
 Write-Host "║  AI Girlfriend — 四季夏目 · 全自动一键部署                        ║" -ForegroundColor Magenta
-Write-Host "║  模型下载 → llama.cpp → OpenClaw → 工作区 → 启动 → 验证          ║" -ForegroundColor Magenta
+Write-Host "║  模型下载 → llama.cpp → OpenClaw → Sakura → 工作区 → 验证       ║" -ForegroundColor Magenta
 Write-Host "╚═══════════════════════════════════════════════════════════════════╝" -ForegroundColor Magenta
 Write-Host ""
 
@@ -216,8 +218,86 @@ if ($SkipBotConfig) {
 }
 Write-Host ""
 
-# ═══ 6. 路径检查 ═══
-step 6 "路径检查 & 修复清单"
+# ═══ 6. Sakura 桌宠部署 ═══
+step 6 "Sakura 桌宠 (下载 Release + 安装依赖)"
+if ($SkipSakuraSetup) { info "已跳过" }
+else {
+    $sakuraDir = Join-Path $ScriptDir "skills\sakura"
+
+    # 检查是否已有 Sakura 源码
+    if ((Test-Path "$sakuraDir\main.py") -and (Test-Path "$sakuraDir\requirements.txt")) {
+        info "检测到 Sakura 源码 ($sakuraDir)"
+    } else {
+        warn "未找到 Sakura 源码，正在 Git Clone..."
+        if (-not (Test-Path $sakuraDir)) { New-Item -ItemType Directory $sakuraDir -Force | Out-Null }
+        git clone https://github.com/Rvosy/Sakura.git $sakuraDir 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) { wok "Sakura 源码已克隆" } else { warn "Clone 失败 (可能被墙)，请手动下载: https://github.com/Rvosy/Sakura" }
+    }
+
+    # 下载 runtime Release（内置 Python 环境）
+    $runtimeDir = "$sakuraDir\runtime"
+    if (Test-Path "$runtimeDir\python.exe") {
+        wok "runtime (内置 Python) 已就绪"
+    } else {
+        info "需要下载 Sakura Release 包 (含内置 python.exe)..."
+        # 尝试获取最新 Release URL，否则使用用户指定的
+        if (-not $SakuraReleaseUrl) {
+            try {
+                $ghApi = "https://api.github.com/repos/Rvosy/Sakura/releases/latest"
+                $release = Invoke-RestMethod $ghApi -Timeout 10 -ErrorAction Stop
+                $asset = $release.assets | Where-Object { $_.name -match "windows-x64\.zip" } | Select-Object -First 1
+                if ($asset) { $SakuraReleaseUrl = $asset.browser_download_url }
+                info "最新 Release: $($release.tag_name)"
+            } catch {
+                warn "无法获取 GitHub Release (可能被墙)"
+            }
+        }
+
+        if ($SakuraReleaseUrl) {
+            $zipPath = "$env:TEMP\sakura-release.zip"
+            info "下载: $SakuraReleaseUrl"
+            try {
+                Invoke-WebRequest $SakuraReleaseUrl -OutFile $zipPath -Timeout 600
+                wok "下载完成 ($([math]::Round((Get-Item $zipPath).Length/1MB,1)) MB)"
+                info "解压 runtime..."
+                Expand-Archive $zipPath -DestinationPath $env:TEMP\sakura-extract -Force
+                $extractedRuntime = Get-ChildItem "$env:TEMP\sakura-extract" -Directory -Filter "runtime" -Recurse -Depth 1 | Select-Object -First 1
+                if ($extractedRuntime) {
+                    Copy-Item $extractedRuntime.FullName $runtimeDir -Recurse -Force
+                    wok "runtime 已部署到 $runtimeDir"
+                } else {
+                    warn "Release 包中未找到 runtime 目录"
+                }
+                Remove-Item $zipPath -Force -ErrorAction SilentlyContinue
+                Remove-Item "$env:TEMP\sakura-extract" -Recurse -Force -ErrorAction SilentlyContinue
+            } catch {
+                err "下载 Sakura Release 失败: $_"
+                warn "请手动从 https://github.com/Rvosy/Sakura/releases 下载 windows-x64.zip 并解压 runtime/ 到 $runtimeDir"
+            }
+        } else {
+            warn "无 Release URL。请手动下载: https://github.com/Rvosy/Sakura/releases"
+            warn "解压后把 runtime/ 文件夹放到 $runtimeDir"
+        }
+    }
+
+    # 安装 Python 依赖
+    if (Test-Path "$sakuraDir\requirements.txt") {
+        info "安装 Sakura Python 依赖..."
+        $pyExe = if (Test-Path "$runtimeDir\python.exe") { "$runtimeDir\python.exe" } else { "python" }
+        & $pyExe -m pip install -r "$sakuraDir\requirements.txt" -i https://mirrors.aliyun.com/pypi/simple --extra-index-url https://pypi.tuna.tsinghua.edu.cn/simple --extra-index-url https://pypi.org/simple 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) { wok "Sakura 依赖安装完成" } else { warn "部分依赖安装失败，请在 Sakura 目录手动运行 install.bat" }
+    }
+
+    # Playwright 浏览器
+    $pyExe = if (Test-Path "$runtimeDir\python.exe") { "$runtimeDir\python.exe" } else { "python" }
+    info "安装 Playwright 浏览器..."
+    & $pyExe -m playwright install chromium 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) { wok "Playwright Chromium 已安装" } else { warn "Playwright 安装失败，部分功能不可用" }
+}
+Write-Host ""
+
+# ═══ 7. 路径检查 ═══
+step 7 "路径检查 & 修复清单"
 Write-Host "  ╔════════════════════════════════════════════════════════╗" -ForegroundColor Yellow
 Write-Host "  ║  ⚠️ 以下文件有硬编码路径，需手动修改！                  ║" -ForegroundColor Yellow
 Write-Host "  ╚════════════════════════════════════════════════════════╝" -ForegroundColor Yellow
@@ -239,8 +319,8 @@ foreach ($e in $edits) {
 Write-Host "  💡 用 VS Code 全局替换: Ctrl+Shift+H → C:\Users\TK → 你的用户名" -ForegroundColor Cyan
 Write-Host ""
 
-# ═══ 7. 启动服务 ═══
-step 7 "启动服务"
+# ═══ 8. 启动服务 ═══
+step 8 "启动服务"
 if ($NoStart) { info "已跳过" }
 else {
     $ls = "$ScriptDir\llama-config\launch-llama.ps1"
@@ -254,8 +334,8 @@ else {
 }
 Write-Host ""
 
-# ═══ 8. 验证 ═══
-step 8 "验证"
+# ═══ 9. 验证 ═══
+step 9 "验证"
 try { $h = Invoke-RestMethod "http://127.0.0.1:8080/health" -Timeout 5; wok "llama-server ✅" } catch { warn "llama-server 未就绪" }
 try { & openclaw gateway status 2>&1 | Out-Null; if ($LASTEXITCODE -eq 0) { wok "Gateway ✅" } else { warn "Gateway 未知" } } catch { warn "Gateway 未检测到" }
 if (Test-Path "$WorkspacePath\AGENTS.md") { wok "工作区完整 ✅" } else { err "工作区缺失" }

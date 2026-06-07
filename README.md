@@ -201,6 +201,7 @@ AI_Girlfriend/                        # OpenClaw workspace root
 | [GPT-SoVITS v2](https://github.com/RVC-Boss/GPT-SoVITS) | v2pro-20250604 | TTS voice synthesis |
 | [ComfyUI](https://github.com/comfyanonymous/ComfyUI) | aki-v3 | Image generation engine |
 | [Sakura Desktop Pet](https://github.com/Rvosy/Sakura) | v0.9.6-dev | Desktop companion GUI (authorized by @Rvosy, Issue #38) |
+| Python | 3.12+ | Runtime (Sakura + TTS + ComfyUI) |
 
 ## Quick Start
 
@@ -218,9 +219,9 @@ powershell -File setup-all.ps1
 bash setup-all.sh
 ```
 
-Automated pipeline: environment check → model download → llama.cpp setup → OpenClaw install → workspace deploy → path check → launch → verify.
+Automated pipeline: environment check → model download → llama.cpp setup → OpenClaw install → Sakura desktop pet → workspace deploy → path check → launch → verify.
 
-> Supports resume from breakpoint. Flags: `--skip-model-download`, `--skip-llama-setup`, `--skip-openclaw-setup`, `--dry-run`, `--no-start`
+> Supports resume from breakpoint. Flags: `--skip-model-download`, `--skip-llama-setup`, `--skip-openclaw-setup`, `--skip-sakura-setup`, `--dry-run`, `--no-start`
 
 ---
 

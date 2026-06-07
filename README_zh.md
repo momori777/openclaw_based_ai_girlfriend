@@ -204,6 +204,7 @@ AI_Girlfriend/                        # OpenClaw 工作区根目录
 | [GPT-SoVITS v2](https://github.com/RVC-Boss/GPT-SoVITS) | v2pro-20250604 | TTS 语音合成 |
 | [ComfyUI](https://github.com/comfyanonymous/ComfyUI) | aki-v3 | 图片生成引擎 |
 | [Sakura 桌宠](https://github.com/Rvosy/Sakura) | v0.9.6-dev | 桌面伙伴 GUI（@Rvosy 授权引用，Issue #38） |
+| Python | 3.12+ | 运行时（Sakura + TTS + ComfyUI） |
 
 ## 快速开始
 
@@ -221,9 +222,9 @@ powershell -File setup-all.ps1
 bash setup-all.sh
 ```
 
-自动串行执行：环境检查 → 模型下载 → llama.cpp 配置 → OpenClaw 安装 → 工作区部署 → 路径检查 → 启动 → 验证。
+自动串行执行：环境检查 → 模型下载 → llama.cpp 配置 → OpenClaw 安装 → Sakura 桌宠 → 工作区部署 → 路径检查 → 验证。
 
-> 支持断点续传。可选参数：`--skip-model-download`、`--skip-llama-setup`、`--skip-openclaw-setup`、`--dry-run`、`--no-start`
+> 支持断点续传。可选参数：`--skip-model-download`、`--skip-llama-setup`、`--skip-openclaw-setup`、`--skip-sakura-setup`、`--dry-run`、`--no-start`
 
 ---
 
