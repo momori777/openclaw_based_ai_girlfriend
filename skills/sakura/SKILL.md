@@ -13,8 +13,8 @@ Sakura 是一个开源的桌面宠物 Agent 框架，由 [Rvosy](https://github.
 **技术架构：**
 - UI 层：PySide6（Qt for Python）桌宠窗口、立绘动画、字幕气泡、设置面板
 - Agent 层：AgentRuntime 决策引擎，使用 OpenAI 兼容接口原生 `tool_calls` 协议
-- **LLM 层（已改造）**：默认使用本地 llama-server (Qwen3.6-35B)，带 llama 生命周期感知重试 + 远程 fallback
-- **本地 LLM 适配器**：`app/llm/local_llama_client.py` — 当 TTS/ComfyUI 杀死 llama 时自动指数退避重试（最长 126s），重试耗尽后自动切换远程 fallback
+- **LLM 层（已改造）**：默认使用本地 llama-server (Qwen3.6-35B)，带 llama 生命周期感知自动恢复 + 远程 fallback
+- **本地 LLM 适配器**：`app/llm/local_llama_client.py` — 检测到 TTS/ComfyUI 杀死 llama 后停止发请求，轮询 /health + /completion 等待 llama 就绪后自动恢复（超时 300s）
 - 语音层：GPT-SoVITS TTS，支持声线切换和语气联动
 - 记忆层：mem0 长期记忆 + Qdrant 向量存储 + sentence-transformers 嵌入
 - 插件层：原生 Python 插件系统 + MCP Server 支持
@@ -218,10 +218,10 @@ Sakura → POST /tts → GPT-SoVITS API → WAV 音频 → PyAudio 播放
 1. **`app/llm/local_llama_client.py`** — 新增本地 LLM 适配器：
    - 默认 URL：`http://localhost:8080/v1`（llama-server）
    - 默认模型：`qwen3.6-35b`
-   - llama 不可用时指数退避重试（2s→4s→8s→16s→32s→64s，总计 ~126s）
-   - 检测到 TTS/ComfyUI 杀死 llama 时不报错，静默等待重试
-   - 重试耗尽后自动切换远程 fallback API
-   - 重试间 llama 恢复后自动切回本地
+   - **检测到 llama 被 TTS/ComfyUI kill 时停止发请求**，不盲目重试
+   - **轮询 /health + /completion** 等待 llama 重启就绪（与 tts_call.py / comfyui_call.py 一致的三阶段验证）
+   - llama 就绪后自动恢复请求（超时 300s，覆盖 TTS 推理 + llama 重载）
+   - 超时后自动切换远程 fallback API
 
 2. **`app/config/settings_service.py`** — 默认配置改为本地：
    - `base_url` 默认值：`http://localhost:8080/v1`（原为 `https://api.openai.com/v1`）
@@ -260,10 +260,10 @@ Sakura → POST /tts → GPT-SoVITS API → WAV 音频 → PyAudio 播放
 |------|---------------|---------|
 | OpenClaw Agent | 持续占用 | 主 session 的 LLM |
 | TTS/ComfyUI | 需要 GPU 推理时 kill llama | `run_tts.ps1` / `run_comfyui.ps1` 停/启 llama |
-| Sakura | 发送对话请求 | `LocalLlamaClient` 自动重试等待 llama 恢复 |
+| Sakura | 发送对话请求 | `LocalLlamaClient` 感知 llama 掉线 → 停止发请求 → 轮询等待恢复 → 自动继续 |
 
-Sakura 的 `LocalLlamaClient` 不需要自己 kill/restart llama —— 它只是被动等待。
-当 TTS/ComfyUI 正在运行时，Sakura 的 LLM 请求会排队等待（指数退避），llama 恢复后自动继续。
+Sakura 的 `LocalLlamaClient` 不做 kill/restart —— TTS/ComfyUI 杀 llama，Sakura 感知恢复。
+管理逻辑与 tts_call.py / comfyui_call.py 的 `_wait_for_llama_ready()` 完全一致（端口→/health→/completion 三阶段验证）。
 
 ### 回退到纯远程 API
 
