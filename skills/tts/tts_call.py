@@ -329,11 +329,9 @@ except (OSError, ValueError):
     pass
 
 
-# 参考音频目录
-REF_DIR = os.path.join(
-    r"C:\Users\TK\.openclaw\workspace\qqbot\skills\tts",
-    r"ref_wavs"
-)
+# 参考音频目录（相对于脚本所在目录）
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+REF_DIR = os.path.join(_SCRIPT_DIR, "ref_wavs")
 
 # 14个预筛选的参考音频，按情绪分类
 REF_WAVES = {

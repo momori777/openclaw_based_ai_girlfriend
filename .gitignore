@@ -28,10 +28,6 @@ __pycache__/
 *.pyc
 *.pyo
 
-# 临时音频
-*.wav
-!skills/tts/ref_wavs/*.wav
-
 # 模型文件（不提交任何模型权重）
 *.safetensors
 *.gguf
@@ -42,8 +38,9 @@ __pycache__/
 *.onnx
 *.engine
 
-# 参考音频（模型资产）
-skills/tts/ref_wavs/
+# 临时音频（但保留参考音频）
+*.wav
+!skills/tts/ref_wavs/*.wav
 
 # 压缩包
 *.rar
