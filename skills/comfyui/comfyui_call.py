@@ -121,13 +121,12 @@ def release_lock(pid=None):
 
 
 def _port_open(host, port, timeout=2):
-    """检测指定端口是否开启"""
-    try:
-        s = socket.create_connection((host, port), timeout=timeout)
-        s.close()
-        return True
-    except (ConnectionRefusedError, OSError, socket.timeout):
-        return False
+    """检测指定端口是否开启（使用共享模块）"""
+    _scripts_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if _scripts_dir not in sys.path:
+        sys.path.insert(0, _scripts_dir)
+    from skills.shared.llama_utils import port_open
+    return port_open(host, port, timeout)
 
 
 def stop_llama():
@@ -164,66 +163,12 @@ def stop_llama():
 
 
 def _wait_for_llama_ready(host, port, timeout=180):
-    """等待 llama-server 端口打开 + HTTP 健康检查通过"""
-    import urllib.request
-    
-    # 阶段1: 等待端口打开
-    for i in range(timeout):
-        if _port_open("127.0.0.1", port, timeout=2):
-            print(f"[LLAMA] 端口 {port} 已打开 ({i+1}s)", file=sys.stderr, flush=True)
-            break
-        if i % 10 == 9:
-            print(f"[LLAMA] 等待端口中... ({i+1}s)", file=sys.stderr, flush=True)
-    else:
-        print(f"[LLAMA] 警告：{port} 端口未在 {timeout}s 内打开", file=sys.stderr, flush=True)
-        return False
-    
-    # 阶段2: HTTP 健康检查（发送一个 /health 请求确认模型已加载）
-    # 注意：llama-server 的 /health 端点在模型加载完成后才返回 200
-    # 如果端口打开了但模型还在加载，/health 会返回 503
-    print("[LLAMA] 等待模型加载（HTTP 健康检查）...", file=sys.stderr, flush=True)
-    for i in range(timeout):
-        try:
-            resp = urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=5)
-            if resp.status == 200:
-                print(f"[LLAMA] llama-server 完全就绪（模型已加载）！({i+1}s)", file=sys.stderr, flush=True)
-                return True
-        except Exception:
-            pass
-        if i % 5 == 4:
-            print(f"[LLAMA] 模型加载中... ({i+1}s)", file=sys.stderr, flush=True)
-    
-    # 阶段3: 发一个真实的 completion 请求确认模型能正常响应
-    # /health 200 不一定意味着模型已加载完毕，需要实际请求验证
-    print("[LLAMA] 验证模型可用（发送测试请求）...", file=sys.stderr, flush=True)
-    import json as _json
-    test_payload = _json.dumps({
-        "prompt": "hi",
-        "n_predict": 1,
-        "temperature": 0,
-        "cache_prompt": False
-    }).encode('utf-8')
-    for i in range(min(timeout, 60)):
-        try:
-            req = urllib.request.Request(
-                f"http://127.0.0.1:{port}/completion",
-                data=test_payload,
-                headers={"Content-Type": "application/json", "Authorization": "Bearer 123456"}
-            )
-            resp = urllib.request.urlopen(req, timeout=10)
-            if resp.status == 200:
-                body = resp.read()
-                data = _json.loads(body)
-                if data.get("content") or data.get("stop"):
-                    print(f"[LLAMA] 模型完全就绪（completion 验证通过）！({i+1}s)", file=sys.stderr, flush=True)
-                    return True
-        except Exception:
-            pass
-        if i % 5 == 4:
-            print(f"[LLAMA] 等待模型可生成... ({i+1}s)", file=sys.stderr, flush=True)
-    
-    print(f"[LLAMA] 警告：/completion 未在 {min(timeout, 60)}s 内响应", file=sys.stderr, flush=True)
-    return True
+    """等待 llama-server 完全就绪（使用共享模块）"""
+    _scripts_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if _scripts_dir not in sys.path:
+        sys.path.insert(0, _scripts_dir)
+    from skills.shared.llama_utils import wait_for_llama_ready
+    return wait_for_llama_ready(port=port, timeout=timeout, log=lambda msg: print(msg, file=sys.stderr, flush=True))
 
 
 def start_llama():
