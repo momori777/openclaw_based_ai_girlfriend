@@ -8,6 +8,7 @@ from app.agent.mcp.settings import MCPRuntimeSettings, normalize_mcp_runtime_set
 from app.config.character_loader import DEFAULT_CHARACTER_ID, CharacterProfile, CharacterRegistry
 from app.config.yaml_config import load_yaml_mapping, save_yaml_mapping
 from app.llm.api_client import ApiSettings
+from app.llm.local_llama_client import _LOCALHOST_BASE_URL, _LOCAL_MODEL_DEFAULT
 from app.ui.theme import ThemeSettings, theme_from_mapping, theme_to_mapping
 from app.agent.proactive_care import (
     PROACTIVE_DEFAULT_CHECK_INTERVAL_MINUTES,
@@ -66,12 +67,13 @@ class AppSettingsService:
         data = self._api_section("llm")
         timeout_seconds = _int_value(
             data.get("timeout_seconds"),
-            60,
+            120,
         )
+        # 默认本地 llama-server（项目统一 LLM 后端）
         return ApiSettings(
-            base_url=str(data.get("base_url", "https://api.openai.com/v1")).strip().rstrip("/"),
-            api_key=str(data.get("api_key", "")).strip(),
-            model=str(data.get("model", "gpt-4.1-mini")).strip(),
+            base_url=str(data.get("base_url", _LOCALHOST_BASE_URL)).strip().rstrip("/"),
+            api_key=str(data.get("api_key", "local")).strip(),
+            model=str(data.get("model", _LOCAL_MODEL_DEFAULT)).strip(),
             timeout_seconds=timeout_seconds,
         )
 

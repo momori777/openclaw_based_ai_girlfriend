@@ -9,6 +9,7 @@ from app.agent.mcp.settings import MCPRuntimeSettings
 from app.agent.memory_curator import MemoryCurator, MemoryCurationState
 from app.config.settings_service import AppSettingsService
 from app.llm.api_client import ApiSettings, OpenAICompatibleClient
+from app.llm.local_llama_client import LocalLlamaClient, LocalLlamaConfig, _LOCALHOST_BASE_URL
 from app.core.app_context import AppContext, CoreServices, FeatureServices, StorageServices
 from app.core.extensions import ExtensionRegistry
 from app.config.character_loader import (
@@ -119,7 +120,22 @@ def build_initial_app_context(base_dir: Path, startup_state: StartupState | None
     character_registry = startup_state.character_registry
     character_profile = startup_state.character_profile
     system_prompt = startup_state.system_prompt
-    api_client = OpenAICompatibleClient(settings)
+    # 创建本地 llama 客户端（带 TTS/ComfyUI 生命周期感知重试 + 远程 fallback）
+    llama_config = LocalLlamaConfig(
+        base_url=settings.base_url,
+        model=settings.model,
+        timeout_seconds=settings.timeout_seconds,
+        api_key=settings.api_key,
+    )
+    api_client = LocalLlamaClient(llama_config)
+    # 若配置了非本地 URL，自动设为 fallback
+    if settings.base_url.rstrip("/") != _LOCALHOST_BASE_URL:
+        api_client.set_fallback(
+            base_url=settings.base_url,
+            model=settings.model,
+            api_key=settings.api_key,
+            timeout=settings.timeout_seconds,
+        )
     memory_store = MemoryStore(
         base_dir=base_dir,
         api_settings=settings,

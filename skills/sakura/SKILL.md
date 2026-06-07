@@ -13,7 +13,8 @@ Sakura 是一个开源的桌面宠物 Agent 框架，由 [Rvosy](https://github.
 **技术架构：**
 - UI 层：PySide6（Qt for Python）桌宠窗口、立绘动画、字幕气泡、设置面板
 - Agent 层：AgentRuntime 决策引擎，使用 OpenAI 兼容接口原生 `tool_calls` 协议
-- LLM 层：OpenAI 兼容 API 客户端，支持视觉多模态模型（⚠️ 不支持 DeepSeek，必须用多模态模型）
+- **LLM 层（已改造）**：默认使用本地 llama-server (Qwen3.6-35B)，带 llama 生命周期感知重试 + 远程 fallback
+- **本地 LLM 适配器**：`app/llm/local_llama_client.py` — 当 TTS/ComfyUI 杀死 llama 时自动指数退避重试（最长 126s），重试耗尽后自动切换远程 fallback
 - 语音层：GPT-SoVITS TTS，支持声线切换和语气联动
 - 记忆层：mem0 长期记忆 + Qdrant 向量存储 + sentence-transformers 嵌入
 - 插件层：原生 Python 插件系统 + MCP Server 支持
@@ -206,6 +207,75 @@ Sakura → POST /tts → GPT-SoVITS API → WAV 音频 → PyAudio 播放
 
 见 `docs/SAKURA_PLUGIN_SDK.md` 了解完整插件开发方式。
 
+## LLM 后端架构（已改造为本地优先）
+
+### 改造动机
+
+上游 Sakura 默认调用远程 API（如 GemAI Gemini Flash）。为与 AI_Girlfriend 项目整体风格一致——**所有技能共用一颗大脑（llama-server Qwen3.6-35B）**——已将默认 LLM 后端改为本地 llama-server。
+
+### 改造内容
+
+1. **`app/llm/local_llama_client.py`** — 新增本地 LLM 适配器：
+   - 默认 URL：`http://localhost:8080/v1`（llama-server）
+   - 默认模型：`qwen3.6-35b`
+   - llama 不可用时指数退避重试（2s→4s→8s→16s→32s→64s，总计 ~126s）
+   - 检测到 TTS/ComfyUI 杀死 llama 时不报错，静默等待重试
+   - 重试耗尽后自动切换远程 fallback API
+   - 重试间 llama 恢复后自动切回本地
+
+2. **`app/config/settings_service.py`** — 默认配置改为本地：
+   - `base_url` 默认值：`http://localhost:8080/v1`（原为 `https://api.openai.com/v1`）
+   - `model` 默认值：`qwen3.6-35b`（原为 `gpt-4.1-mini`）
+   - `timeout_seconds` 默认值：120（原为 60，给 llama 推理更长时间）
+
+3. **`app/core/bootstrap.py`** — 启动时创建 `LocalLlamaClient` 而非原始 `OpenAICompatibleClient`
+   - 若 `api.yaml` 配置了非本地 URL，自动设为远程 fallback
+   - MemoryStore/MemoryCurator/AgentRuntime 仍然使用相同的 `.chat()/.complete_raw()/.complete_with_tools()` 接口
+
+### 数据流
+
+```
+┌─────────────────────────────────────────────────────┐
+│ Sakura (PySide6 GUI)                                 │
+│                                                       │
+│  AgentRuntime ──→ LocalLlamaClient ──→ llama-server  │
+│       │                    │           :8080/v1        │
+│       │                    │  ┌─ fail (TTS running)   │
+│       │                    │  │  retry 2s, 4s, 8s...  │
+│       │                    │  └─ llama back → success  │
+│       │                    │                           │
+│       │              fallback (if >126s)               │
+│       │                    └──→ remote API (GemAI)     │
+│       │                                                │
+│  ┌────┴─────── TTS GPU 推理 ────────┐                 │
+│  │ Sakura 自己的 TTS 也杀 llama    │                 │
+│  │ 但 LocalLlamaClient 会自动等    │                 │
+│  └────────────────────────────────┘                  │
+└─────────────────────────────────────────────────────┘
+```
+
+### 共用 llm-server 的三方协调
+
+| 组件 | 何时占用 llama | 协调方式 |
+|------|---------------|---------|
+| OpenClaw Agent | 持续占用 | 主 session 的 LLM |
+| TTS/ComfyUI | 需要 GPU 推理时 kill llama | `run_tts.ps1` / `run_comfyui.ps1` 停/启 llama |
+| Sakura | 发送对话请求 | `LocalLlamaClient` 自动重试等待 llama 恢复 |
+
+Sakura 的 `LocalLlamaClient` 不需要自己 kill/restart llama —— 它只是被动等待。
+当 TTS/ComfyUI 正在运行时，Sakura 的 LLM 请求会排队等待（指数退避），llama 恢复后自动继续。
+
+### 回退到纯远程 API
+
+若想用回远程 API（不通过本地 llama）：编辑 `data/config/api.yaml`：
+```yaml
+llm:
+  base_url: https://api.gemai.cc/v1
+  api_key: your_key_here
+  model: gemini-2.0-flash
+```
+此时 `LocalLlamaClient` 检测到非本地 URL，自动将远程 API 作为唯一后端（不经过 llama）。
+
 ## 配置说明
 
 所有配置在 `D:\AI_Girlfriend\skills\sakura\data\config\` 下：
@@ -213,10 +283,12 @@ Sakura → POST /tts → GPT-SoVITS API → WAV 音频 → PyAudio 播放
 ### api.yaml
 ```yaml
 llm:
-  base_url: https://api.gemai.cc/v1     # API 地址（推荐 GemAI，便宜好用）
-  api_key: your_api_key_here            # API Key
-  model: gemini-2.0-flash               # ⚠️ 必须是多模态模型！
-  timeout_seconds: 60
+  # 默认不配置 → 自动使用本地 llama-server (http://localhost:8080/v1, qwen3.6-35b)
+  # 配置远程 API 后 → 本地 llama 不可用时自动 fallback
+  base_url: http://localhost:8080/v1    # 本地 llama-server
+  api_key: local                        # llama-server 不需要 key
+  model: qwen3.6-35b                    # 本地模型
+  timeout_seconds: 120                  # 本地推理较慢，给足时间
 tts:
   enabled: true
   provider: gpt-sovits
@@ -278,6 +350,11 @@ notepad data\config\api.yaml
 5. **角色包：** 需要从 GitHub Releases 或百度网盘下载角色包（含立绘和声线权重），通过设置页导入。
 6. **Git 子模块：** 本项目是 `sakura` 源码的完整克隆（非 git submodule），放在 `D:\AI_Girlfriend\skills\sakura\` 下。
 7. **授权状态：** 作者 Rvosy 已在 Issue #38 中同意引用（"可以的，这段时间太忙没时间加开源协议，之后会给项目加一个相对宽松一点的开源协议"）。
+
+## 致谢
+
+- **原作者/贡献者**：[@Rvosy](https://github.com/Rvosy) — Sakura Desktop Pet 项目创建者，已授权本项目引用（Issue #38）
+- **LLM 本地化改造**：TK (momori777) — 将默认 LLM 后端改为本地 llama-server，使 Sakura 与 AI_Girlfriend 项目共用同一颗大脑
 
 ## 相关链接
 

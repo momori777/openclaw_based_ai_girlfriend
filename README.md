@@ -422,3 +422,8 @@ OpenClaw Gateway (qqbot + telegram channel)
 - Llama-server does not support cross-turn prompt cache reuse (SSM architecture limitation) — use periodic `/reset`
 - All model files protected by `.gitignore`, not committed to git
 - GPT-SoVITS weights are self-trained and not distributed here — train with your own voice data
+- **Sakura Desktop Pet** (`skills/sakura/`) shares the same llama-server — `LocalLlamaClient` auto-retries during TTS/ComfyUI GPU occupation
+
+## 🙏 Credits
+
+- [@Rvosy](https://github.com/Rvosy) — Creator of [Sakura Desktop Pet](https://github.com/Rvosy/Sakura), authorized for inclusion (Issue #38)
