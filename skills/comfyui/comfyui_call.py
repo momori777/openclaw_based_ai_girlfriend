@@ -122,9 +122,9 @@ def release_lock(pid=None):
 
 def _port_open(host, port, timeout=2):
     """检测指定端口是否开启（使用共享模块）"""
-    _scripts_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    if _scripts_dir not in sys.path:
-        sys.path.insert(0, _scripts_dir)
+    _pkg_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    if _pkg_dir not in sys.path:
+        sys.path.insert(0, _pkg_dir)
     from skills.shared.llama_utils import port_open
     return port_open(host, port, timeout)
 
@@ -164,9 +164,9 @@ def stop_llama():
 
 def _wait_for_llama_ready(host, port, timeout=180):
     """等待 llama-server 完全就绪（使用共享模块）"""
-    _scripts_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    if _scripts_dir not in sys.path:
-        sys.path.insert(0, _scripts_dir)
+    _pkg_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    if _pkg_dir not in sys.path:
+        sys.path.insert(0, _pkg_dir)
     from skills.shared.llama_utils import wait_for_llama_ready
     return wait_for_llama_ready(port=port, timeout=timeout, log=lambda msg: print(msg, file=sys.stderr, flush=True))
 
