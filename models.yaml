@@ -7,7 +7,14 @@
 #   huggingface-cli download TAOTAO777/ai-girlfriend-natsume <repo_path> --local-dir <你的目录>
 #   或直接在 HF 网页下载单个文件
 #
-# 注意: local_path 使用 {{PLACEHOLDER}} 占位符，运行 configure.ps1 后自动填入你的实际路径。
+# 路径配置: 首次 clone 后运行 quick_setup.ps1 一键填写 config.yaml
+# 模型下载后更新此文件的 local_path 指向你本地的实际目录
+
+# ============================================================
+# 路径变量
+# 为了克隆后直接可用, 以下路径由 quick_setup.ps1 自动填写.
+# 手动配置: 复制 .env.example 或运行 quick_setup.ps1
+# ============================================================
 
 models:
   # =========================================================================
@@ -17,7 +24,7 @@ models:
     type: GGUF (Q4_K, 16.11 GB, 34.66B MoE, 8/256 experts)
     repo: TAOTAO777/ai-girlfriend-natsume
     repo_path: llm/Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Compact.gguf
-    local_path: {{LLAMA_MODEL_DIR}}
+    local_path: ${LLAMA_MODEL_DIR:-models/}
     download: |
       huggingface-cli download TAOTAO777/ai-girlfriend-natsume llm/Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Compact.gguf --local-dir models
     upstream: https://huggingface.co/mudler/Qwen3.6-35B-A3B-uncensored-heretic-APEX-GGUF
@@ -30,7 +37,7 @@ models:
     type: safetensors (SDXL/Illustrious, 6.46 GB)
     repo: TAOTAO777/ai-girlfriend-natsume
     repo_path: comfyui-checkpoints/WAI-Nsfw-Illustrious-17.safetensors
-    local_path: {{CHECKPOINTS_DIR}}
+    local_path: ${COMFYUI_CHECKPOINTS_DIR:-checkpoints/}
     download: |
       huggingface-cli download TAOTAO777/ai-girlfriend-natsume comfyui-checkpoints/WAI-Nsfw-Illustrious-17.safetensors --local-dir checkpoints
     upstream: https://civitai.com/models/1185480/wai-nsfw-illustrious
@@ -40,7 +47,7 @@ models:
     type: safetensors (6.46 GB)
     repo: TAOTAO777/ai-girlfriend-natsume
     repo_path: comfyui-checkpoints/miaomiaoHarem_v20.safetensors
-    local_path: {{CHECKPOINTS_DIR}}
+    local_path: ${COMFYUI_CHECKPOINTS_DIR:-checkpoints/}
     download: |
       huggingface-cli download TAOTAO777/ai-girlfriend-natsume comfyui-checkpoints/miaomiaoHarem_v20.safetensors --local-dir checkpoints
     upstream: https://civitai.com/models/1033365/miaomiaoharem
@@ -54,10 +61,10 @@ models:
     repo: TAOTAO777/ai-girlfriend-natsume
     files:
       - repo_path: gpt-sovits-weights/GPT_weights_v2Pro/xxx-e30.ckpt
-        local_path: {{SOVITS_DIR}}\GPT_weights_v2Pro\
+        local_path: ${SOVITS_ROOT:-GPT-SoVITS}/GPT_weights_v2Pro/
         note: SoVITS 权重（命名交叉：GPT目录放ckpt，SoVITS目录放pth）
       - repo_path: gpt-sovits-weights/SoVITS_weights_v2Pro/xxx_e20_s6240.pth
-        local_path: {{SOVITS_DIR}}\SoVITS_weights_v2Pro\
+        local_path: ${SOVITS_ROOT:-GPT-SoVITS}/SoVITS_weights_v2Pro/
         note: GPT 权重（配对使用）
     download: |
       huggingface-cli download TAOTAO777/ai-girlfriend-natsume gpt-sovits-weights/ --local-dir gpt-sovits-weights --include "*.ckpt" "*.pth"

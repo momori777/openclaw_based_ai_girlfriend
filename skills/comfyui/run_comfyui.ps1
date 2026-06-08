@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$positive,
     [string]$negative,
     [int]$seed = -1,
@@ -11,19 +11,37 @@
 
 $ErrorActionPreference = 'Continue'
 
+# ========== 从 config.yaml 读取路径 ==========
+$workspaceRoot = (Get-Item $PSScriptRoot).Parent.Parent.FullName
+$configPath = Join-Path $workspaceRoot 'config.yaml'
+if (-not (Test-Path $configPath)) {
+    Write-Output "FAILED: config.yaml not found at $configPath"
+    Write-Output "Please run quick_setup.ps1 first to configure paths."
+    exit 1
+}
+$configRaw = Get-Content $configPath -Raw -Encoding UTF8
+
+# 辅助函数：从 YAML 提取简单标量值
+function Get-YamlValue($raw, $key) {
+    $pattern = "(?m)^\s*${key}\s*:\s*`"?(.+?)`"?\s*$"
+    $m = [regex]::Match($raw, $pattern)
+    if ($m.Success) { return $m.Groups[1].Value.Trim('"').Trim() }
+    return $null
+}
+
+$comfyuiPython = Get-YamlValue $configRaw 'comfyui_python'
+$comfyuiScript = Join-Path $PSScriptRoot 'comfyui_call.py'  # always alongside this script
+$mediaDir = Get-YamlValue $configRaw 'media_qqbot_images'
+if (-not $mediaDir) { $mediaDir = Join-Path $workspaceRoot 'media\qqbot\images' }
+
 $taskId = 'comfyui_' + (Get-Date -Format 'yyyyMMddHHmmss')
-$flagDir = 'C:\Users\TK\.openclaw\workspace\.task_flags'
+$flagDir = Join-Path $workspaceRoot '.task_flags'
 $flagFile = Join-Path $flagDir "$taskId.done"
 mkdir $flagDir -Force -ErrorAction SilentlyContinue | Out-Null
-
-$mediaDir = 'C:\Users\TK\.openclaw\media\qqbot\images'
 mkdir $mediaDir -Force -ErrorAction SilentlyContinue | Out-Null
 
-$python = 'E:\comfyui\ComfyUI-aki-v3\python\python.exe'
-$script = 'C:\Users\TK\.openclaw\workspace\skills\comfyui\comfyui_call.py'
-
 # Run ComfyUI - stderr has [LOCK]/[LLAMA] logs, stdout has the image path
-$rawOutput = & $python $script $positive $negative $seed $width $height $steps $cfg $checkpoint 2>$null
+$rawOutput = & $comfyuiPython $comfyuiScript $positive $negative $seed $width $height $steps $cfg $checkpoint 2>$null
 # Extract the path from stdout (may have tqdm mixed in)
 $imgPath = ($rawOutput | Where-Object { $_ -match '\.png' } | Select-Object -Last 1) -replace '^\s+|\s+$',''
 
@@ -42,5 +60,8 @@ if ($exitOk -and $imgPath -and (Test-Path $imgPath)) {
 
     # ComfyUI failed, ensure llama is restarted
     Write-Output 'Restarting llama after failed ComfyUI run...'
-    & 'C:\Users\TK\Desktop\vllm\restart-llama.ps1'
+    $restartScript = Get-YamlValue $configRaw 'restart_script'
+    if ($restartScript -and (Test-Path $restartScript)) {
+        & $restartScript
+    }
 }

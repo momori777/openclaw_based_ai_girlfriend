@@ -8,6 +8,11 @@
   - 主 session 用 local/qwen3.6-35b（llama），你一 exec Python 脚本就会杀 llama → 你自己的 LLM 也会断
   - 子 session 用 local/qwen3.6-35b + deepseek fallback，被杀了还能 fallback
 
+## 路径配置
+
+所有路径集中在 workspace 根目录 `config.yaml`。
+首次 clone 后运行 `quick_setup.ps1` 填写自己的路径。
+
 ## 记忆目录
 
 - 角色扮演对话 → `memory/role_play/`
@@ -22,17 +27,25 @@
 **必须用 subagent 模式**（`sessions_spawn(mode="run")`），因为 TTS 会停 llama-server（端口 8080）。
 **绝对不能用主 session 的 exec 直接跑 Python 脚本！**
 
-```powershell
-sessions_spawn(
-  task: "调用 TTS 合成语音。调用：
-    $env:PYTHONIOENCODING='utf-8'
-    $env:HF_ENDPOINT='https://hf-mirror.com'
-    $output = & '{{SOVITS_PYTHON}}' '{{WORKSPACE}}\skills\tts\tts_call.py' '目标文本' '语言代码' [情绪模式]
-    读取标准输出获取 wav 路径，复制到媒体目录后，用 <qqmedia>媒体目录路径</qqmedia> 标签发送语音。",
-  taskName: "tts-voice"
-  mode: run
-  runTimeoutSeconds: 540
-)
+```javascript
+sessions_spawn({
+  task: `你的任务：只做一件事——用 exec 工具运行下面这条命令。
+
+exec 时一定要加 yieldMs: 180000（必须！PS脚本会杀llama，要等它恢复）
+
+命令（复制粘贴，一个字都不许改）：
+
+powershell -ExecutionPolicy Bypass -File "{{WORKSPACE}}\\skills\\tts\\run_tts.ps1" -text "$text" -lang "$lang" -mood "$mood"
+
+exec 完毕后：
+- 如果 exec 输出包含 "DONE:" 和路径 → 复制 exec 输出的所有带 DONE: 和 <qqmedia> 的行，原样输出
+- 如果失败（包含 FAILED）→ 输出"FAILED"
+- 不要做任何其他操作！`,
+  taskName: "tts",
+  mode: "run",
+  model: "local/qwen3.6-35b",
+  runTimeoutSeconds: 420
+})
 ```
 
 **语言代码**: ja=日文(默认), zh=中文, en=英文, yue=粤语, ko=韩文
@@ -50,15 +63,15 @@ sessions_spawn(
 
 ### 输出
 
-合成 wav 后，PS 脚本已将文件复制到 `C:\Users\TK\.openclaw\media\qqbot\audio\`，
-并输出 `DONE:` 路径和 `<qqmedia>` 标签。子 session 会原样透传这些行。
+合成 wav 后，PS 脚本将文件复制到 media 目录，输出 `DONE:` 路径和 `<qqmedia>` 标签。
+子 session 会原样透传这些行。
 
 ## ComfyUI 画图
 
 ### 输出
 
-生成图片后，PS 脚本已将文件复制到 `C:\Users\TK\.openclaw\media\qqbot\images\`，
-并输出 `DONE:` 路径和 `<qqmedia>` 标签。子 session 会原样透传这些行。
+生成图片后，PS 脚本将文件复制到 media 目录，输出 `DONE:` 路径和 `<qqmedia>` 标签。
+子 session 会原样透传这些行。
 
 ### 主 session 收到 DONE 时
 

@@ -1,10 +1,12 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 GPT-SoVITS TTS 调用脚本 — 子进程自动化流程
 用法: python tts_call.py "目标文本" "语言代码" [情绪模式]
 语言代码: zh=中文, ja=日文, en=英文
 情绪模式: casual=日常温柔, tsundere=傲娇强势, romantic=深情, long=长句稳定, random=随机
 输出: 标准输出打印生成的 wav 文件路径
+
+路径: 从 workspace 根目录的 config.yaml 读取
 
 自动化流程（与 ComfyUI 子进程一致）：
 1. 获取文件锁防止并发
@@ -22,10 +24,25 @@ import re
 import numpy as np
 import scipy.io.wavfile
 
+# --- 从 workspace/config.yaml 读取路径 ---
+_def = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+def _load_config():
+    config_path = os.path.join(_def, 'config.yaml')
+    if not os.path.exists(config_path):
+        print(f"[ERROR] 找不到 config.yaml: {config_path}", file=sys.stderr)
+        print("请先运行 quick_setup.ps1 或在 workspace 根目录创建 config.yaml",
+              file=sys.stderr)
+        sys.exit(1)
+    import yaml
+    with open(config_path, 'r', encoding='utf-8') as f:
+        return yaml.safe_load(f)
+
+_cfg = _load_config()
+
 # --- shared 生命周期模块 ---
-_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-if _dir not in sys.path:
-    sys.path.insert(0, _dir)
+if _def not in sys.path:
+    sys.path.insert(0, _def)
 
 from skills.shared.llama_lifecycle import (
     acquire_lock, release_lock,
@@ -34,20 +51,20 @@ from skills.shared.llama_lifecycle import (
 )
 
 # Change to WebUI directory
-WEBUI_DIR = r"C:\Users\TK\Desktop\vllm\GPT-SoVITS-v2pro-20250604-nvidia50"
+WEBUI_DIR = _cfg['sovits_root']
 os.chdir(WEBUI_DIR)
 sys.path.insert(0, WEBUI_DIR)
 
-# ========== 路径配置 ==========
-OUTPUT_DIR = r"C:\Users\TK\.openclaw\workspace\qqbot\audio"
+# ========== 路径配置（从 config.yaml 读取） ==========
+OUTPUT_DIR = _cfg['tts_temp_output_dir']
 LOCK_FILE = os.path.join(OUTPUT_DIR, ".tts_running.lock")
 
 # ========== Llama Server 配置 ==========
-LLAMA_LOG_DIR = r"C:\Users\TK\Desktop\vllm\restart-logs"
-LLAMA_EXE_PATH = r"C:\Users\TK\Desktop\vllm\llama-b9222-bin-win-cuda-12.4-x64\llama-server.exe"
-LLAMA_MODEL_PATH = r"C:\Users\TK\Desktop\vllm\models\Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Compact.gguf"
-RESTART_SCRIPT = r"C:\Users\TK\Desktop\vllm\restart-llama.ps1"
-LLAMA_PORT = 8080
+LLAMA_LOG_DIR = _cfg['llama_log_dir']
+LLAMA_EXE_PATH = _cfg['llama_exe']
+LLAMA_MODEL_PATH = _cfg['llama_model']
+RESTART_SCRIPT = _cfg['restart_script']
+LLAMA_PORT = _cfg.get('llama_port', 8080)
 
 # ========== 硬超时（防止子进程卡死不退出，导致 gateway session 锁死） ==========
 HARD_TIMEOUT = 300  # 秒，超过这个时间强制退出（推理最长3min + llama重启等待最长2min，留余量）
@@ -62,11 +79,9 @@ def slugify(text, max_len=20):
     return cleaned or 'untitled'
 
 
-# ========== 参考音频目录 ==========
-REF_DIR = os.path.join(
-    r"C:\Users\TK\.openclaw\workspace\qqbot\skills\tts",
-    r"ref_wavs"
-)
+# ========== 参考音频目录（相对于 tts skill） ==========
+_tts_dir = os.path.dirname(os.path.abspath(__file__))
+REF_DIR = os.path.join(_tts_dir, "ref_wavs")
 
 # 14个预筛选的参考音频，按情绪分类
 REF_WAVES = {

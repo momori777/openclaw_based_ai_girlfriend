@@ -4,6 +4,7 @@ ComfyUI 文生图调用脚本 — 直接加载模型推理，不走 WebUI HTTP A
 用法: python comfyui_call.py "正prompt" "负prompt" [seed] [宽] [高] [步数] [CFG] [模型名]
 输出: 标准输出打印生成的 PNG 文件路径
 
+路径: 从 workspace 根目录的 config.yaml 读取
 可用模型:
   WAI-Nsfw-Illustrious-17.safetensors  (6.5GB, 训练至 2025-05, 层次分明)
   miaomiaoHarem_v20.safetensors        (6.5GB, 训练至 2026-01, 偏油但库新)
@@ -13,12 +14,30 @@ import os
 import time
 import random
 import re
+import json
 import numpy as np
 
+# --- 从 workspace/config.yaml 读取路径 ---
+_def = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_d = _def
+
+def _load_config():
+    """从 workspace 根目录 config.yaml 加载路径配置，不存在则报错退出"""
+    config_path = os.path.join(_def, 'config.yaml')
+    if not os.path.exists(config_path):
+        print(f"[ERROR] 找不到 config.yaml: {config_path}", file=sys.stderr)
+        print("请先运行 quick_setup.ps1 或在 workspace 根目录创建 config.yaml",
+              file=sys.stderr)
+        sys.exit(1)
+    import yaml
+    with open(config_path, 'r', encoding='utf-8') as f:
+        return yaml.safe_load(f)
+
+_cfg = _load_config()
+
 # --- shared 生命周期模块 ---
-_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-if _dir not in sys.path:
-    sys.path.insert(0, _dir)
+if _def not in sys.path:
+    sys.path.insert(0, _def)
 
 from skills.shared.llama_lifecycle import (
     acquire_lock, release_lock,
@@ -26,18 +45,18 @@ from skills.shared.llama_lifecycle import (
     TimeoutGuard, register_cleanup_handlers,
 )
 
-# ========== 路径配置 ==========
-COMFYUI_ROOT = r"E:\comfyui\ComfyUI-aki-v3\ComfyUI"
-PYTHON_PATH = r"E:\comfyui\ComfyUI-aki-v3\python\python.exe"
-CHECKPOINTS_DIR = r"E:\comfyui\ComfyUI-aki-v3\ComfyUI\models\checkpoints"
-OUTPUT_DIR = r"C:\Users\TK\.openclaw\workspace\comfyui"
+# ========== 路径配置（从 config.yaml 读取） ==========
+COMFYUI_ROOT = _cfg['comfyui_root']
+PYTHON_PATH = _cfg['comfyui_python']
+CHECKPOINTS_DIR = _cfg['comfyui_checkpoints_dir']
+OUTPUT_DIR = _cfg['comfyui_temp_output_dir']
 
 # ========== Llama Server 配置 ==========
-LLAMA_LOG_DIR = r"C:\Users\TK\Desktop\vllm\restart-logs"
-LLAMA_EXE_PATH = r"C:\Users\TK\Desktop\vllm\llama-b9222-bin-win-cuda-12.4-x64\llama-server.exe"
-LLAMA_MODEL_PATH = r"C:\Users\TK\Desktop\vllm\models\Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Compact.gguf"
-RESTART_SCRIPT = r"C:\Users\TK\Desktop\vllm\restart-llama.ps1"
-LLAMA_PORT = 8080
+LLAMA_LOG_DIR = _cfg['llama_log_dir']
+LLAMA_EXE_PATH = _cfg['llama_exe']
+LLAMA_MODEL_PATH = _cfg['llama_model']
+RESTART_SCRIPT = _cfg['restart_script']
+LLAMA_PORT = _cfg.get('llama_port', 8080)
 
 # ========== 硬超时（防止子进程卡死不退出，导致 gateway session 锁死） ==========
 HARD_TIMEOUT = 600  # 秒，超过这个时间强制退出（跑图最长8min + llama重启等待最长2min，留余量）
@@ -94,9 +113,6 @@ def safe_load_safetensors(ckpt_path):
             state_dict[key] = torch.from_numpy(arr.copy())
 
     return state_dict
-
-
-import json  # safe_load_safetensors 需要
 
 
 def run_txt2img(positive_prompt, negative_prompt, seed, width, height,
@@ -220,7 +236,6 @@ def run_txt2img(positive_prompt, negative_prompt, seed, width, height,
         if not ok:
             print(f"[LLAMA] 启动失败(VRAM不足或超时)，图像已保存到 {out_path}",
                   file=sys.stderr, flush=True)
-            # 仍然输出图像路径，让 PS 脚本负责任务标记
         else:
             print(f"[LLAMA] 已就绪，继续输出结果", file=sys.stderr, flush=True)
 
