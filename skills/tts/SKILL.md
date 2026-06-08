@@ -46,7 +46,7 @@ sessions_spawn({
 
 命令（复制粘贴，一个字都不许改）：
 
-powershell -ExecutionPolicy Bypass -File "C:\Users\TK\.openclaw\workspace\skills\tts\run_tts.ps1" -text "$text" -lang "$lang" -mood "$mood"
+powershell -ExecutionPolicy Bypass -File "{{WORKSPACE}}\skills\tts\run_tts.ps1" -text "$text" -lang "$lang" -mood "$mood"
 
 执行完毕后：
 - 如果成功，输出"DONE: 然后是DONE后面的路径"
@@ -75,7 +75,7 @@ sessions_spawn 后直接回复用户："正在合成语音，稍等哦~ 🎤"
 
 ⚠️ announce 可能包含两段文本：
 1) 子 session 总结的长日志（模型信息、耗时等）—— 忽略它，不要转发！
-2) "DONE: C:\...\xxx.wav" —— 只有这行有用！
+2) "DONE: <path>" —— 只有这行有用！
 
 你必须：
 1. 从 announce 文本中提取 "DONE: 后的文件路径"
@@ -83,8 +83,8 @@ sessions_spawn 后直接回复用户："正在合成语音，稍等哦~ 🎤"
 3. 不要转发子 session 的日志文本
 
 📦 同时输出两种格式（Telegram + QQ 都能收到语音）：
-MEDIA:C:\Users\TK\.openclaw\media\qqbot\audio\tts_20260604xxxxxx.wav
-<qqmedia>C:\Users\TK\.openclaw\media\qqbot\audio\tts_20260604xxxxxx.wav</qqmedia>
+MEDIA:{{MEDIA_AUDIO}}\tts_yyyyMMddHHmmss.wav
+<qqmedia>{{MEDIA_AUDIO}}\tts_yyyyMMddHHmmss.wav</qqmedia>
 
 ⚠️ 注意：
 - MEDIA: 指令必须单独一行，在行首，不在代码块里
@@ -114,7 +114,7 @@ MEDIA:C:\Users\TK\.openclaw\media\qqbot\audio\tts_20260604xxxxxx.wav
 
 ## .task_flags 文件
 
-- 路径: `C:\Users\TK\.openclaw\workspace\.task_flags\`
+- 路径: `{{TASK_FLAGS}}\`
 - 格式: `{"status":"ok","file":"<path>","type":"tts"}` 或 `{"status":"fail"}`
 - 由 Windows Task Scheduler `cleanup-orphans` 每小时自动清理
 

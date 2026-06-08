@@ -1,5 +1,5 @@
 #configure.ps1 — AI Girlfriend 路径配置向导
-#交互式输入你的本地路径，自动替换所有脚本中的硬编码路径
+#交互式输入你的本地路径，自动替换所有脚本中的 {{PLACEHOLDER}} 占位符
 
 param([switch]$DryRun)
 
@@ -12,8 +12,7 @@ Write-Host "  四季夏目 AI Girlfriend — 路径配置向导" -ForegroundColo
 Write-Host "============================================================" -ForegroundColor Magenta
 Write-Host ""
 Write-Host "  这个脚本会引导你输入本地路径，" -ForegroundColor Gray
-Write-Host "  然后自动替换所有脚本中的硬编码路径。" -ForegroundColor Gray
-Write-Host "  (user-home 占位符会自动使用 %USERPROFILE%)" -ForegroundColor Gray
+Write-Host "  然后自动替换所有脚本中的 {{PLACEHOLDER}} 占位符。" -ForegroundColor Gray
 Write-Host ""
 
 # ========== 路径配置 ==========
@@ -23,7 +22,7 @@ Write-Host ""
 # OpenClaw 工作区
 $userHome = $env:USERPROFILE
 $defaultWorkspace = Join-Path $userHome ".openclaw\workspace"
-$Workspace = Read-Host "OpenClaw 工作区目录" 
+$Workspace = Read-Host "OpenClaw 工作区目录"
 if (-not $Workspace) { $Workspace = $defaultWorkspace }
 Write-Host "  ✓ 工作区: $Workspace" -ForegroundColor Green
 Write-Host ""
@@ -69,7 +68,7 @@ if (-not $CheckpointsDir) { $CheckpointsDir = $defaultCheckpoints }
 Write-Host "  ✓ Checkpoints: $CheckpointsDir" -ForegroundColor Green
 
 $defaultComfyOutput = Join-Path $Workspace "comfyui_output"
-$ComfyOutput = Read-Host "ComfyUI 图片输出目录" 
+$ComfyOutput = Read-Host "ComfyUI 图片输出目录"
 if (-not $ComfyOutput) { $ComfyOutput = $defaultComfyOutput }
 Write-Host "  ✓ 输出: $ComfyOutput" -ForegroundColor Green
 Write-Host ""
@@ -85,6 +84,8 @@ $defaultSovitsPython = Join-Path $SovitsDir "runtime\python.exe"
 $SovitsPython = Read-Host "GPT-SoVITS Python 解释器路径"
 if (-not $SovitsPython) { $SovitsPython = $defaultSovitsPython }
 Write-Host "  ✓ Python: $SovitsPython" -ForegroundColor Green
+
+$LlamaModelDir = Split-Path $LlamaModel -Parent
 
 $defaultTtsOutput = Join-Path $Workspace "qqbot\audio"
 $TtsOutput = Read-Host "TTS 音频输出目录"
@@ -115,6 +116,9 @@ if (-not $TaskFlags) { $TaskFlags = $defaultTaskFlags }
 Write-Host "  ✓ .task_flags: $TaskFlags" -ForegroundColor Green
 Write-Host ""
 
+# 额外路径
+$SessionsDir = Join-Path $userHome ".openclaw\agents\main\sessions"
+
 # ========== 确认 ==========
 Write-Host "============================================================" -ForegroundColor Magenta
 Write-Host "  配置汇总" -ForegroundColor Cyan
@@ -124,6 +128,7 @@ $config = @{
     Workspace       = $Workspace
     LlamaExe        = $LlamaExe
     LlamaModel      = $LlamaModel
+    LlamaModelDir   = $LlamaModelDir
     LlamaLogDir     = $LlamaLogDir
     RestartScript   = $RestartScript
     ComfyRoot       = $ComfyRoot
@@ -137,6 +142,7 @@ $config = @{
     MediaImages     = $MediaImages
     MediaAudio      = $MediaAudio
     TaskFlags       = $TaskFlags
+    SessionsDir     = $SessionsDir
 }
 foreach ($k in $config.Keys | Sort-Object) {
     Write-Host ("  {0,-20} = {1}" -f $k, $config[$k]) -ForegroundColor Gray
@@ -155,11 +161,33 @@ $config | ConvertTo-Json | Set-Content $configPath -Encoding UTF8
 Write-Host "✓ 配置已保存到 config.json" -ForegroundColor Green
 Write-Host ""
 
+# ========== 占位符映射表 ==========
+$placeholders = @{
+    '{{WORKSPACE}}'       = $Workspace
+    '{{LLAMA_EXE}}'       = $LlamaExe
+    '{{LLAMA_MODEL}}'     = $LlamaModel
+    '{{LLAMA_MODEL_DIR}}' = $LlamaModelDir
+    '{{LLAMA_LOG_DIR}}'   = $LlamaLogDir
+    '{{RESTART_SCRIPT}}'  = $RestartScript
+    '{{COMFYUI_ROOT}}'    = $ComfyRoot
+    '{{COMFYUI_PYTHON}}'  = $ComfyPython
+    '{{CHECKPOINTS_DIR}}' = $CheckpointsDir
+    '{{COMFY_OUTPUT}}'    = $ComfyOutput
+    '{{SOVITS_DIR}}'      = $SovitsDir
+    '{{SOVITS_PYTHON}}'   = $SovitsPython
+    '{{TTS_OUTPUT}}'      = $TtsOutput
+    '{{REF_DIR}}'         = $RefDir
+    '{{MEDIA_IMAGES}}'    = $MediaImages
+    '{{MEDIA_AUDIO}}'     = $MediaAudio
+    '{{TASK_FLAGS}}'      = $TaskFlags
+    '{{SESSIONS_DIR}}'    = $SessionsDir
+}
+
 # ========== 替换函数 ==========
 function Replace-InFile {
     param(
         [string]$RelativePath,
-        [hashtable]$Replacements  # old -> new
+        [hashtable]$Placeholders
     )
     $fullPath = Join-Path $scriptDir $RelativePath
     if (-not (Test-Path $fullPath)) {
@@ -168,9 +196,9 @@ function Replace-InFile {
     }
     $content = Get-Content $fullPath -Raw -Encoding UTF8
     $changed = $false
-    foreach ($old in $Replacements.Keys) {
-        if ($content -match [regex]::Escape($old)) {
-            $content = $content.Replace($old, $Replacements[$old])
+    foreach ($placeholder in $Placeholders.Keys) {
+        if ($content.Contains($placeholder)) {
+            $content = $content.Replace($placeholder, $Placeholders[$placeholder])
             $changed = $true
         }
     }
@@ -184,129 +212,28 @@ function Replace-InFile {
     }
 }
 
-# ========== 定义所有旧路径 → 新路径映射 ==========
-$oldWorkspace    = "C:\Users\TK\.openclaw\workspace"
-$oldUserProfile  = "C:\Users\TK"
-$oldLlamaExe     = "C:\Users\TK\Desktop\vllm\llama-b9222-bin-win-cuda-12.4-x64\llama-server.exe"
-$oldLlamaModel   = "C:\Users\TK\Desktop\vllm\models\Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Compact.gguf"
-$oldLlamaLogDir  = "C:\Users\TK\Desktop\vllm\restart-logs"
-$oldRestart      = "C:\Users\TK\Desktop\vllm\restart-llama.ps1"
-$oldComfyRoot    = "E:\comfyui\ComfyUI-aki-v3\ComfyUI"
-$oldComfyPython  = "E:\comfyui\ComfyUI-aki-v3\python\python.exe"
-$oldCheckpoints  = "E:\comfyui\ComfyUI-aki-v3\ComfyUI\models\checkpoints"
-$oldComfyOutput  = "C:\Users\TK\.openclaw\workspace\comfyui_output"
-$oldSovitsDir    = "C:\Users\TK\Desktop\vllm\GPT-SoVITS-v2pro-20250604-nvidia50"
-$oldSovitsPython = "C:\Users\TK\Desktop\vllm\GPT-SoVITS-v2pro-20250604-nvidia50\runtime\python.exe"
-$oldTtsOutput    = "C:\Users\TK\.openclaw\workspace\qqbot\audio"
-$oldRefDir       = "C:\Users\TK\.openclaw\workspace\qqbot\skills\tts"
-$oldMediaImages  = "C:\Users\TK\.openclaw\media\qqbot\images"
-$oldMediaAudio   = "C:\Users\TK\.openclaw\media\qqbot\audio"
-$oldTaskFlags    = "C:\Users\TK\.openclaw\workspace\.task_flags"
-$oldLockComfy    = "C:\Users\TK\.openclaw\workspace\comfyui_output\.comfyui_running.lock"
-$oldLockTts      = "C:\Users\TK\.openclaw\workspace\qqbot\audio\.tts_running.lock"
-$oldSessionsDir  = "C:\Users\TK\.openclaw\agents\main\sessions"
-
-$newWorkspace    = $Workspace
-$newLlamaExe     = $LlamaExe
-$newLlamaModel   = $LlamaModel
-$newLlamaLogDir  = $LlamaLogDir
-$newRestart      = $RestartScript
-$newComfyRoot    = $ComfyRoot
-$newComfyPython  = $ComfyPython
-$newCheckpoints  = $CheckpointsDir
-$newComfyOutput  = $ComfyOutput
-$newSovitsDir    = $SovitsDir
-$newSovitsPython = $SovitsPython
-$newTtsOutput    = $TtsOutput
-$newRefDir       = $RefDir
-$newMediaImages  = $MediaImages
-$newMediaAudio   = $MediaAudio
-$newTaskFlags    = $TaskFlags
-$newSessionsDir  = Join-Path $UserHome ".openclaw\agents\main\sessions"
-
-Write-Host "--- 开始替换 ---" -ForegroundColor Yellow
+# ========== 被处理的所有文件 ==========
+Write-Host "--- 开始替换占位符 ---" -ForegroundColor Yellow
 Write-Host ""
 
-# 替换规则: 每个文件 + 需要替换的 old→new 对
+$files = @(
+    "skills\tts\tts_call.py",
+    "skills\tts\run_tts.ps1",
+    "skills\tts\SKILL.md",
+    "skills\comfyui\comfyui_call.py",
+    "skills\comfyui\run_comfyui.ps1",
+    "skills\comfyui\SKILL.md",
+    "skills\comfyui\prompt_template.md",
+    "skills\llama-watchdog.ps1",
+    "skills\cleanup_orphans.ps1",
+    "AGENTS.md",
+    "TOOLS.md",
+    "models.yaml"
+)
 
-# ===== tts_call.py =====
-$tts_call_replacements = @{
-    $oldSovitsDir    = $newSovitsDir
-    $oldTtsOutput    = $newTtsOutput
-    $oldLlamaLogDir  = $newLlamaLogDir
-    $oldLlamaExe     = $newLlamaExe
-    $oldLlamaModel   = $newLlamaModel
-    $oldRestart      = $newRestart
-    $oldRefDir       = $newRefDir
+foreach ($file in $files) {
+    Replace-InFile $file $placeholders
 }
-Replace-InFile "skills\tts\tts_call.py" $tts_call_replacements
-
-# ===== comfyui_call.py =====
-$comfyui_call_replacements = @{
-    $oldComfyRoot    = $newComfyRoot
-    $oldComfyPython  = $newComfyPython
-    $oldCheckpoints  = $newCheckpoints
-    $oldComfyOutput  = $newComfyOutput
-    $oldLlamaLogDir  = $newLlamaLogDir
-    $oldLlamaExe     = $newLlamaExe
-    $oldLlamaModel   = $newLlamaModel
-    $oldRestart      = $newRestart
-}
-Replace-InFile "skills\comfyui\comfyui_call.py" $comfyui_call_replacements
-
-# ===== run_tts.ps1 =====
-$run_tts_replacements = @{
-    $oldTaskFlags    = $newTaskFlags
-    $oldMediaAudio   = $newMediaAudio
-    $oldSovitsPython = $newSovitsPython
-    "$oldWorkspace\skills\tts\tts_call.py" = Join-Path $newWorkspace "skills\tts\tts_call.py"
-}
-Replace-InFile "skills\tts\run_tts.ps1" $run_tts_replacements
-
-# ===== run_comfyui.ps1 =====
-$run_comfyui_replacements = @{
-    $oldTaskFlags    = $newTaskFlags
-    $oldMediaImages  = $newMediaImages
-    "$oldWorkspace\skills\comfyui\comfyui_call.py" = Join-Path $newWorkspace "skills\comfyui\comfyui_call.py"
-}
-Replace-InFile "skills\comfyui\run_comfyui.ps1" $run_comfyui_replacements
-
-# ===== llama-watchdog.ps1 =====
-$llama_watchdog_replacements = @{
-    $oldLlamaLogDir  = $newLlamaLogDir
-    "$oldWorkspace\restart-llama.ps1" = Join-Path $newWorkspace "restart-llama.ps1"
-}
-Replace-InFile "skills\llama-watchdog.ps1" $llama_watchdog_replacements
-
-# ===== cleanup_orphans.ps1 =====
-$cleanup_replacements = @{
-    "$oldWorkspace\restart-llama.ps1"       = Join-Path $newWorkspace "restart-llama.ps1"
-    $oldLockComfy    = Join-Path $newComfyOutput ".comfyui_running.lock"
-    $oldLockTts      = Join-Path $newTtsOutput ".tts_running.lock"
-    $oldTaskFlags    = $newTaskFlags
-    $oldSessionsDir  = $newSessionsDir
-}
-Replace-InFile "skills\cleanup_orphans.ps1" $cleanup_replacements
-
-# ===== SKILL.md 文件 (通过旧workspace路径替换) =====
-$skill_replacements = @{
-    $oldWorkspace = $newWorkspace
-    $oldUserProfile = $userHome
-    $oldComfyPython = $newComfyPython
-}
-Replace-InFile "skills\comfyui\SKILL.md" $skill_replacements
-Replace-InFile "skills\tts\SKILL.md" $skill_replacements
-Replace-InFile "skills\comfyui\prompt_template.md" $skill_replacements
-Replace-InFile "AGENTS.md" $skill_replacements
-Replace-InFile "TOOLS.md" $skill_replacements
-
-# ===== README 不需要替换路径（已经是通用描述） =====
-
-# ===== models.yaml 中 local_path =====
-$models_replacements = @{
-    $oldUserProfile = $userHome
-}
-Replace-InFile "models.yaml" $models_replacements
 
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Magenta
@@ -314,18 +241,9 @@ Write-Host "  ✅ 配置完成！" -ForegroundColor Green
 Write-Host "============================================================" -ForegroundColor Magenta
 Write-Host ""
 Write-Host "  已处理的文件:" -ForegroundColor Gray
-Write-Host "    skills/tts/tts_call.py" -ForegroundColor Gray
-Write-Host "    skills/tts/run_tts.ps1" -ForegroundColor Gray
-Write-Host "    skills/tts/SKILL.md" -ForegroundColor Gray
-Write-Host "    skills/comfyui/comfyui_call.py" -ForegroundColor Gray
-Write-Host "    skills/comfyui/run_comfyui.ps1" -ForegroundColor Gray
-Write-Host "    skills/comfyui/SKILL.md" -ForegroundColor Gray
-Write-Host "    skills/comfyui/prompt_template.md" -ForegroundColor Gray
-Write-Host "    skills/llama-watchdog.ps1" -ForegroundColor Gray
-Write-Host "    skills/cleanup_orphans.ps1" -ForegroundColor Gray
-Write-Host "    AGENTS.md" -ForegroundColor Gray
-Write-Host "    TOOLS.md" -ForegroundColor Gray
-Write-Host "    models.yaml" -ForegroundColor Gray
+foreach ($file in $files) {
+    Write-Host "    $file" -ForegroundColor Gray
+}
 Write-Host ""
 Write-Host "  配置已保存到 config.json，下次运行会自动读取。" -ForegroundColor Gray
 Write-Host "  使用方法: .\configure.ps1           # 交互式输入" -ForegroundColor Gray

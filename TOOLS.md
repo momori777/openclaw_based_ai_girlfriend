@@ -27,7 +27,7 @@ sessions_spawn(
   task: "调用 TTS 合成语音。调用：
     $env:PYTHONIOENCODING='utf-8'
     $env:HF_ENDPOINT='https://hf-mirror.com'
-    $output = & 'C:\Users\TK\Desktop\vllm\GPT-SoVITS-v2pro-20250604-nvidia50\runtime\python.exe' 'C:\Users\TK\.openclaw\workspace\skills\tts\tts_call.py' '目标文本' '语言代码' [情绪模式]
+    $output = & '{{SOVITS_PYTHON}}' '{{WORKSPACE}}\skills\tts\tts_call.py' '目标文本' '语言代码' [情绪模式]
     读取标准输出获取 wav 路径，复制到媒体目录后，用 <qqmedia>媒体目录路径</qqmedia> 标签发送语音。",
   taskName: "tts-voice"
   mode: run

@@ -12,20 +12,20 @@ param(
 $ErrorActionPreference = 'Continue'
 
 $taskId = 'comfyui_' + (Get-Date -Format 'yyyyMMddHHmmss')
-$flagDir = 'C:\Users\TK\.openclaw\workspace\.task_flags'
+$flagDir = '{{TASK_FLAGS}}'
 $flagFile = Join-Path $flagDir "$taskId.done"
 mkdir $flagDir -Force -ErrorAction SilentlyContinue | Out-Null
 
-$mediaDir = 'C:\Users\TK\.openclaw\media\qqbot\images'
+$mediaDir = '{{MEDIA_IMAGES}}'
 mkdir $mediaDir -Force -ErrorAction SilentlyContinue | Out-Null
 
-$python = 'E:\comfyui\ComfyUI-aki-v3\python\python.exe'
-$script = 'C:\Users\TK\.openclaw\workspace\skills\comfyui\comfyui_call.py'
+$python = '{{COMFYUI_PYTHON}}'
+$script = '{{WORKSPACE}}\skills\comfyui\comfyui_call.py'
 
 # Run ComfyUI - stderr has [LOCK]/[LLAMA] logs, stdout has the image path
 $rawOutput = & $python $script $positive $negative $seed $width $height $steps $cfg $checkpoint 2>$null
 # Extract the path from stdout (may have tqdm mixed in)
-$imgPath = ($rawOutput | Where-Object { $_ -match 'C:\\.+\.png' } | Select-Object -Last 1) -replace '^\s+|\s+$',''
+$imgPath = ($rawOutput | Where-Object { $_ -match '\.png' } | Select-Object -Last 1) -replace '^\s+|\s+$',''
 
 $exitOk = ($LASTEXITCODE -eq 0) -or ($rawOutput -match '\.png')
 if ($exitOk -and $imgPath -and (Test-Path $imgPath)) {
@@ -54,5 +54,5 @@ if ($exitOk -and $imgPath -and (Test-Path $imgPath)) {
 
     # ComfyUI failed, ensure llama is restarted
     Write-Output 'Restarting llama after failed ComfyUI run...'
-    & 'C:\Users\TK\Desktop\vllm\restart-llama.ps1'
+    & '{{RESTART_SCRIPT}}'
 }

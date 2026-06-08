@@ -27,16 +27,16 @@ from skills.shared.llama_lifecycle import (
 )
 
 # ========== 路径配置 ==========
-COMFYUI_ROOT = r"E:\comfyui\ComfyUI-aki-v3\ComfyUI"
-PYTHON_PATH = r"E:\comfyui\ComfyUI-aki-v3\python"
-CHECKPOINTS_DIR = r"E:\comfyui\ComfyUI-aki-v3\ComfyUI\models\checkpoints"
-OUTPUT_DIR = r"C:\Users\TK\.openclaw\workspace\comfyui_output"
+COMFYUI_ROOT = r"{{COMFYUI_ROOT}}"
+PYTHON_PATH = r"{{COMFYUI_PYTHON}}"
+CHECKPOINTS_DIR = r"{{CHECKPOINTS_DIR}}"
+OUTPUT_DIR = r"{{COMFY_OUTPUT}}"
 
 # ========== Llama Server 配置 ==========
-LLAMA_LOG_DIR = r"C:\Users\TK\Desktop\vllm\restart-logs"
-LLAMA_EXE_PATH = r"C:\Users\TK\Desktop\vllm\llama-b9222-bin-win-cuda-12.4-x64\llama-server.exe"
-LLAMA_MODEL_PATH = r"C:\Users\TK\Desktop\vllm\models\Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Compact.gguf"
-RESTART_SCRIPT = r"C:\Users\TK\Desktop\vllm\restart-llama.ps1"
+LLAMA_LOG_DIR = r"{{LLAMA_LOG_DIR}}"
+LLAMA_EXE_PATH = r"{{LLAMA_EXE}}"
+LLAMA_MODEL_PATH = r"{{LLAMA_MODEL}}"
+RESTART_SCRIPT = r"{{RESTART_SCRIPT}}"
 LLAMA_PORT = 8080
 
 # ========== 硬超时（防止子进程卡死不退出，导致 gateway session 锁死） ==========

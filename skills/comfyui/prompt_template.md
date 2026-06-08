@@ -128,16 +128,16 @@ jpeg artifacts, watermark, signature, bad proportions, monochrome
 
 ```powershell
 # 默认：停 llama → 跑图 → 重启（默认 manage_llama=True）
-& "E:\comfyui\ComfyUI-aki-v3\python\python.exe" "C:\Users\TK\.openclaw\workspace\skills\comfyui\comfyui_call.py" "正向prompt" "负向prompt"
+& "{{COMFYUI_PYTHON}}" "{{WORKSPACE}}\skills\comfyui\comfyui_call.py" "正向prompt" "负向prompt"
 
 # 不停 llama（显存够时）：对话不中断
-& "E:\comfyui\ComfyUI-aki-v3\python\python.exe" "C:\Users\TK\.openclaw\workspace\skills\comfyui\comfyui_call.py" "正向prompt" "负向prompt" -1 1200 1500 30 6.0 "WAI-Nsfw-Illustrious-17.safetensors" --no-manage-llama
+& "{{COMFYUI_PYTHON}}" "{{WORKSPACE}}\skills\comfyui\comfyui_call.py" "正向prompt" "负向prompt" -1 1200 1500 30 6.0 "WAI-Nsfw-Illustrious-17.safetensors" --no-manage-llama
 
 # 切换 miaomiaoHarem (偏油润, 2026-01)
-& "E:\comfyui\ComfyUI-aki-v3\python\python.exe" "C:\Users\TK\.openclaw\workspace\skills\comfyui\comfyui_call.py" "正向prompt" "负向prompt" -1 1200 1500 30 6.0 "miaomiaoHarem_v20.safetensors"
+& "{{COMFYUI_PYTHON}}" "{{WORKSPACE}}\skills\comfyui\comfyui_call.py" "正向prompt" "负向prompt" -1 1200 1500 30 6.0 "miaomiaoHarem_v20.safetensors"
 
 # 快速小图
-& "E:\comfyui\ComfyUI-aki-v3\python\python.exe" "C:\Users\TK\.openclaw\workspace\skills\comfyui\comfyui_call.py" "正向prompt" "负向prompt" -1 640 768 20 5.0
+& "{{COMFYUI_PYTHON}}" "{{WORKSPACE}}\skills\comfyui\comfyui_call.py" "正向prompt" "负向prompt" -1 640 768 20 5.0
 ```
 
 > ⚠️ **manage_llama 问题**：默认会停 llama-server（对话中断 ~70秒），跑完自动重启。如果显存够（20GB+），可以设 manage_llama=False 不停 llama。显存不足时会自动 fallback 到停 llama 模式。

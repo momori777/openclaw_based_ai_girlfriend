@@ -24,7 +24,7 @@ if (-not $llamaHealthy) {
     } else {
         Write-Host "[llama] not running, starting..." -ForegroundColor Yellow
     }
-    & "C:\Users\TK\.openclaw\workspace\restart-llama.ps1"
+    & "{{WORKSPACE}}\restart-llama.ps1"
     Write-Host "[llama] restart script executed" -ForegroundColor Green
 } else {
     Write-Host "[llama] healthy (PID=$($llamaRunning.Id))" -ForegroundColor Green
@@ -98,8 +98,8 @@ if ($WhatIf) {
 
 # Clean stale lock files
 $LockFiles = @(
-    "C:\Users\TK\.openclaw\workspace\comfyui_output\.comfyui_running.lock",
-    "C:\Users\TK\.openclaw\workspace\qqbot\audio\.tts_running.lock"
+    "{{COMFY_OUTPUT}}\.comfyui_running.lock",
+    "{{TTS_OUTPUT}}\.tts_running.lock"
 )
 foreach ($LockFile in $LockFiles) {
     if (-not (Test-Path $LockFile)) { continue }
@@ -116,7 +116,7 @@ foreach ($LockFile in $LockFiles) {
 }
 
 # ---- Task flag cleanup ----
-$TaskFlagDir = "C:\Users\TK\.openclaw\workspace\.task_flags"
+$TaskFlagDir = "{{TASK_FLAGS}}"
 if (Test-Path $TaskFlagDir) {
     $FlagCutoff = (Get-Date).AddHours(-1)
     Get-ChildItem "$TaskFlagDir\*.done","$TaskFlagDir\*.meta.json" -ErrorAction SilentlyContinue | Where-Object {
@@ -125,7 +125,6 @@ if (Test-Path $TaskFlagDir) {
         Remove-Item $_.FullName -Force
         Write-Host "[cleanup] removed stale task flag: $($_.Name)" -ForegroundColor Gray
     }
-    # Also remove any .done files that are complete (not needed after 1 hour)
     Get-ChildItem "$TaskFlagDir\*" -ErrorAction SilentlyContinue | Where-Object {
         $_.CreationTime -lt (Get-Date).AddHours(-2)
     } | ForEach-Object {
@@ -136,20 +135,18 @@ if (Test-Path $TaskFlagDir) {
 
 # ---- Session registry + orphan files cleanup ----
 $SessionDirs = @(
-    "C:\Users\TK\.openclaw\agents\main\sessions"
+    "{{SESSIONS_DIR}}"
 )
 
 foreach ($AgentDir in $SessionDirs) {
     if (-not (Test-Path $AgentDir)) { continue }
     $RegFile = Join-Path $AgentDir "sessions.json"
 
-    # 1. Collect valid session file IDs (actual jsonl files on disk)
     $ValidIds = @{}
     Get-ChildItem "$AgentDir\*.jsonl" -Exclude "*.checkpoint.*","*.trajectory.*","*.bak-*","*.cron.*" -ErrorAction SilentlyContinue | ForEach-Object {
         $ValidIds[$_.BaseName] = $true
     }
 
-    # 2. Clean sessions.json stale entries
     if (Test-Path $RegFile) {
         try {
             $Raw = Get-Content $RegFile -Raw
@@ -163,20 +160,14 @@ foreach ($AgentDir in $SessionDirs) {
                 $Status = $Entry.status
                 $KeyType = $Entry.type -or ''
 
-                # Rules in order:
-                # 1. Key contains :subagent: or :spawn: and no sessionFile -> orphan subagent cleanup
                 $IsSubagentSpawn = ($Key -match ':subagent:' -or $Key -match ':spawn:')
-                # 2. sessionFile points to a file that does not exist
                 $FileMissing = if ($SessionFilePath) { -not (Test-Path $SessionFilePath) } else { $false }
-                # 3. No sessionFile at all and status is done/failed
                 $NoFileStale = (-not $SessionFilePath) -and ($Status -in @('done','failed'))
-                # 4. ended more than 1 hour ago
                 $OldDone = $false
                 if ($Entry.endedAt) {
                     try { $OldDone = ((Get-Date).ToUniversalTime() - (Get-Date '1970-01-01Z').AddMilliseconds($Entry.endedAt)).TotalHours -gt 1 } catch {}
                 }
 
-                # STALE = sessionFile missing + is subagent/spawn, OR no sessionFile + done/failed, OR ended long ago
                 $IsStale = $false
                 if ($IsSubagentSpawn -and (-not $SessionFilePath -or $FileMissing)) {
                     $IsStale = $true
@@ -212,29 +203,23 @@ foreach ($AgentDir in $SessionDirs) {
         }
     }
 
-    # 3. Force-clean any remaining .lock files (session write locks)
-    # These are the main cause of "SessionWriteLockTimeoutError"
     Get-ChildItem "$AgentDir\*.lock" -ErrorAction SilentlyContinue | ForEach-Object {
         try {
             $LockFile = $_.FullName
             $LockPid = $null
-            # Try to read PID from lock file
             try {
                 $LockContent = Get-Content $LockFile -Raw -ErrorAction SilentlyContinue
                 if ($LockContent -match 'pid=(\d+)') { $LockPid = [int]$Matches[1] }
             } catch {}
             
             if ($LockPid -and (Get-Process -Id $LockPid -ErrorAction SilentlyContinue)) {
-                # Process still alive, check if it's a zombie (no active tcp connections, old creation time)
                 $Proc = Get-Process -Id $LockPid -ErrorAction SilentlyContinue
                 if ($Proc -and ((Get-Date) - $Proc.StartTime).TotalMinutes -gt 30) {
-                    # Process running too long with lock → likely orphan
                     Stop-Process -Id $LockPid -Force -ErrorAction SilentlyContinue
                     Remove-Item $LockFile -Force -ErrorAction SilentlyContinue
                     Write-Host "[cleanup] killed zombie process PID=$LockPid and removed its lock file" -ForegroundColor Yellow
                 }
             } else {
-                # No matching process → stale lock
                 Remove-Item $LockFile -Force -ErrorAction SilentlyContinue
                 Write-Host "[cleanup] removed stale lock file: $($_.Name)" -ForegroundColor Yellow
             }
@@ -244,7 +229,6 @@ foreach ($AgentDir in $SessionDirs) {
         }
     }
 
-    # 4. Purge .reset.* and .deleted.* files (backend renames old sessions on /new or session delete)
     $PurgedCount = 0
     Get-ChildItem "$AgentDir\*.reset.*","$AgentDir\*.deleted.*" -ErrorAction SilentlyContinue | ForEach-Object {
         Remove-Item $_.FullName -Force
@@ -252,12 +236,10 @@ foreach ($AgentDir in $SessionDirs) {
         Write-Host "[cleanup] purged reset/deleted file: $($_.Name)" -ForegroundColor Gray
     }
 
-    # 5. Collect known active session ids from sessions.json + existing jsonl files
     $KnownActiveIds = @()
     try {
         if (Test-Path $RegFile) {
             $Reg = Get-Content $RegFile -Raw | ConvertFrom-Json -ErrorAction SilentlyContinue
-            # Support both formats: {sessions:[...]} (new) and {key:{...}} (old)
             if ($Reg -and $Reg.sessions) {
                 $Reg.sessions | ForEach-Object {
                     if ($_.sessionId) { $KnownActiveIds += $_.sessionId }
@@ -268,24 +250,20 @@ foreach ($AgentDir in $SessionDirs) {
                 }
             }
         }
-        # Also add all existing jsonl basenames as active
         Get-ChildItem "$AgentDir\*.jsonl" -Exclude "*.reset.*","*.deleted.*","*.trajectory.*","*.bak-*" -ErrorAction SilentlyContinue |
             ForEach-Object { if ($_.BaseName -notin $KnownActiveIds) { $KnownActiveIds += $_.BaseName } }
     } catch {}
 
-    # 6. Clean stale jsonl files (not in sessions.json AND older than 2 hours)
     $Cutoff = (Get-Date).AddHours(-2)
     Get-ChildItem "$AgentDir\*.jsonl" -ErrorAction SilentlyContinue | ForEach-Object {
         $BaseId = $_.BaseName
         if ($BaseId -notin $KnownActiveIds -and $_.LastWriteTime -lt $Cutoff) {
             Remove-Item $_.FullName -Force
             Write-Host "[cleanup] removed orphan jsonl: $($_.Name)" -ForegroundColor Gray
-            # Purge associated garbage
             Get-ChildItem "$AgentDir\$BaseId.*" -ErrorAction SilentlyContinue | Remove-Item -Force
         }
     }
 
-    # 7. Clean trajectory / temp / lock files for non-active sessions
     $TrashPatterns = @("*.trajectory*","*.bak-*","*.lock","*.tmp")
     foreach ($Pattern in $TrashPatterns) {
         Get-ChildItem "$AgentDir\$Pattern" -ErrorAction SilentlyContinue | ForEach-Object {
