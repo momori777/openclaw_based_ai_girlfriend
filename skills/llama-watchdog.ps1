@@ -1,4 +1,4 @@
-# llama-watchdog.ps1
+﻿# llama-watchdog.ps1
 # 纯 PowerShell watchdog，不依赖任何 LLM
 # 由 Windows Task Scheduler 每 10 分钟触发
 # 作用: 检查 llama-server 健康，宕机则自动重启
@@ -21,7 +21,7 @@ Write-WatchdogLog "=== watchdog check ==="
 $llamaProc = Get-Process llama-server -ErrorAction SilentlyContinue
 if (-not $llamaProc) {
     Write-WatchdogLog "llama-server not running, starting..."
-    & "{{WORKSPACE}}\restart-llama.ps1"
+    & "{{RESTART_SCRIPT}}"
     Write-WatchdogLog "done"
     exit 0
 }
@@ -47,6 +47,6 @@ if ($healthy) {
 Write-WatchdogLog "process alive but port dead, restarting..."
 Stop-Process -Id $llamaProc.Id -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 2
-& "{{WORKSPACE}}\restart-llama.ps1"
+& "{{RESTART_SCRIPT}}"
 Write-WatchdogLog "done"
 exit 0
