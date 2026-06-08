@@ -76,6 +76,7 @@ class AgentRuntime:
         self.prompt_patches = [*prompt_patches] if prompt_patches is not None else []
         self.model_vision_enabled = True
         self.autonomous_screen_observation_enabled = True
+        self.external_memory_dir: str = ""  # 四季夏目 OpenClaw agent 的 memory/ 目录
 
     def update_character(
         self,
@@ -764,6 +765,9 @@ class AgentRuntime:
             for patch in getattr(self, "prompt_patches", [])
             if patch.system_prompt_append.strip()
         )
+        natsume_block = _load_natsume_memory_block(self.external_memory_dir)
+        if natsume_block:
+            parts.append(natsume_block)
         return "\n\n".join(part for part in parts if part)
 
     def _reply_protocol_patch_text(self) -> str:
@@ -2220,3 +2224,59 @@ def _build_debug_meta(
             for result in execution_results
         ],
     }
+
+
+def _load_natsume_memory_block(external_memory_dir: str) -> str:
+    """读取四季夏目 OpenClaw agent 的 memory/ 目录下所有 .md 文件，
+    拼接为一个系统提示词块，让 Sakura 共享主人印象、性格偏好和关系进展。
+    按文件修改时间倒序排列，总长度上限限流。
+    """
+    if not external_memory_dir:
+        return ""
+    from pathlib import Path
+    from datetime import datetime, timezone
+
+    memory_root = Path(external_memory_dir)
+    if not memory_root.is_dir():
+        return ""
+
+    max_total_chars = 4000
+    max_files = 20
+
+    md_files = sorted(
+        memory_root.glob("**/*.md"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    if not md_files:
+        return ""
+
+    # 先读取文件名，限制总文件数
+    md_files = md_files[:max_files]
+
+    parts: list[str] = []
+    total_chars = 0
+    file_count = 0
+    for md_path in md_files:
+        try:
+            content = md_path.read_text(encoding="utf-8").strip()
+        except (OSError, UnicodeDecodeError):
+            continue
+        if not content:
+            continue
+        # 取概览：前 200 字符 + 文件名作为上下文中引用标识
+        rel_path = md_path.relative_to(memory_root)
+        preview = content[:200]
+        block_text = f"【{rel_path}】\n{preview}"
+        if total_chars + len(block_text) > max_total_chars:
+            break
+        parts.append(block_text)
+        total_chars += len(block_text)
+        file_count += 1
+
+    if not parts:
+        return ""
+
+    header = f"【共享记忆：四季夏目 （Natsume）的记忆摘要（最近 {file_count} 个文件）】"
+    all_blocks = "\n\n".join(parts)
+    return f"{header}\n{all_blocks}"

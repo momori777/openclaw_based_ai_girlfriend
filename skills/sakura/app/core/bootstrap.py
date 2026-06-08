@@ -160,6 +160,8 @@ def build_initial_app_context(base_dir: Path, startup_state: StartupState | None
         tools=tool_registry,
         memory=memory_store,
     )
+    # 注入四季夏目 OpenClaw agent 的记忆目录
+    _set_natsume_memory_dir(agent_runtime, base_dir)
     history_store = _create_history_store(base_dir, character_profile)
     visual_observation_store = _create_visual_observation_store(base_dir, character_profile)
     debug_log_settings = settings_service.load_debug_log_settings()
@@ -349,6 +351,27 @@ def _create_visual_observation_store(
 ) -> VisualObservationStore:
     visual_path = base_dir / "data" / "visual_observations" / f"{profile.id}.jsonl"
     return VisualObservationStore(visual_path)
+
+
+def _set_natsume_memory_dir(agent_runtime: AgentRuntime, sakura_base_dir: Path) -> None:
+    """在 AgentRuntime 上设置四季夏目 OpenClaw agent 的 memory/ 目录。
+
+    Sakura 项目布局：
+      D:/AI_Girlfriend/
+        config.json
+        memory/          ← 四季夏目 agent 的记忆 (目标)
+        skills/
+          sakura/        ← Sakura 桌宠 (base_dir)
+            ...
+    """
+    natsume_memory = sakura_base_dir.parent.parent / "memory"
+    if natsume_memory.is_dir():
+        agent_runtime.external_memory_dir = str(natsume_memory)
+        debug_log(
+            "Bootstrap",
+            "已注入四季夏目记忆目录",
+            {"path": str(natsume_memory)},
+        )
 
 
 def _migrate_legacy_history(base_dir: Path, profile: CharacterProfile, history_path: Path) -> None:
