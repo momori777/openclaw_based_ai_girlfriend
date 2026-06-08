@@ -1,0 +1,87 @@
+name: Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_suffix:
+        description: "可选包名后缀，例如 test1；留空则只使用 VERSION"
+        required: false
+        default: ""
+
+jobs:
+  metadata:
+    runs-on: ubuntu-latest
+    outputs:
+      TAG: ${{ steps.gen.outputs.TAG }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Generate package tag
+        id: gen
+        shell: bash
+        run: |
+          VER=$(head -1 VERSION | tr -d '\r' | sed 's/^v//')
+          TAG="v${VER}"
+          SUFFIX="${{ github.event.inputs.version_suffix }}"
+          if [ -n "$SUFFIX" ]; then
+            TAG="${TAG}-${SUFFIX}"
+          fi
+          echo "TAG=$TAG" >> "$GITHUB_OUTPUT"
+
+  package:
+    needs: metadata
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows-x64
+            embed_url: https://www.python.org/ftp/python/3.12.8/python-3.12.8-embed-amd64.zip
+    runs-on: ${{ matrix.os }}
+    env:
+      BUNDLE_ARCHIVE: sakura-${{ needs.metadata.outputs.TAG }}-${{ matrix.platform }}.zip
+      RUNTIME_ARCHIVE: runtime-${{ matrix.platform }}.zip
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download Python 3.12 embeddable runtime
+        shell: bash
+        run: curl -fL -o python-embed.zip "${{ matrix.embed_url }}"
+
+      - name: Extract Python to runtime/
+        shell: bash
+        run: |
+          rm -rf runtime
+          mkdir -p runtime
+          unzip -q python-embed.zip -d runtime/
+
+      - name: Setup pip and runtime import path
+        shell: bash
+        run: |
+          curl -fL -o runtime/get-pip.py https://bootstrap.pypa.io/get-pip.py
+          # 取消注释 import site，使 pip 和 site-packages 可用。
+          sed -i 's/^#import site/import site/' runtime/python312._pth
+          ./runtime/python.exe runtime/get-pip.py --no-warn-script-location
+          # 追加 .. 让 Python 能找到项目根目录的 app 模块。
+          echo '..' >> runtime/python312._pth
+
+      - name: Tidy Windows bundle layout
+        shell: bash
+        run: rm -f install.command start.command python-embed.zip
+
+      - name: Create bundle archive
+        shell: pwsh
+        run: Compress-Archive -Path * -DestinationPath "$env:BUNDLE_ARCHIVE" -Force
+
+      - name: Create runtime archive
+        shell: pwsh
+        run: Compress-Archive -Path runtime -DestinationPath "$env:RUNTIME_ARCHIVE" -Force
+
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: sakura-${{ needs.metadata.outputs.TAG }}-${{ matrix.platform }}
+          path: |
+            ${{ env.BUNDLE_ARCHIVE }}
+            ${{ env.RUNTIME_ARCHIVE }}
+          if-no-files-found: error
+          retention-days: 5

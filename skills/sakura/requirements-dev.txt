@@ -1,0 +1,5 @@
+pytest
+pytest-qt
+pytest-mock
+pytest-env
+pytest-timeout
