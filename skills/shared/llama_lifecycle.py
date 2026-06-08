@@ -314,11 +314,12 @@ def stop_llama(port=8080, wait_vram_stable=True):
         print(f"[LLAMA] 警告：端口 {port} 仍未释放，继续执行",
               file=sys.stderr, flush=True)
 
-    # CUDA VRAM 稳定检测（防止 --no-mmap 模式下 OOM）
-    # llama-server --no-mmap 需要约 7.0-7.5 GB，要求至少 7500 MiB 空闲
-    # max_wait=60s 给 ComfyUI/TTS 足够时间完全释放 GPU 内存（包括进程退出）
+    # CUDA VRAM 稳定检测
+    # RTX 5070 8GB: 系统 ~800MiB + CUDA context ~400MiB = ~1200MiB 固定占用
+    # 可分配 ~7000MiB，要求至少 5500MiB 空闲（给 llama 留余量，去掉 --no-mmap 后更灵活）
+    # max_wait=20s 足够 ComfyUI/TTS 释放 VRAM
     if wait_vram_stable:
-        _wait_for_vram_stable(min_free_mb=7500, max_wait=60)
+        _wait_for_vram_stable(min_free_mb=5500, max_wait=20)
 
     return True
 
@@ -342,15 +343,15 @@ def start_llama(port=8080, exe_path=None, model_path=None,
             time.sleep(0.5)
             free = torch.cuda.mem_get_info()[0] / (1024 ** 2)
             total = torch.cuda.mem_get_info()[1] / (1024 ** 2)
-            if free < 7000:
+            if free < 5500:
                 print(f"[LLAMA] ABORT: only {free:.0f} MiB free / {total:.0f} MiB total, "
-                      f"llama needs ~7500 MiB. Waiting 10s for VRAM recovery...",
+                      f"llama needs ~5.5 GiB. Waiting 10s for VRAM recovery...",
                       file=sys.stderr, flush=True)
                 # 再等 10s，期间监控 VRAM
                 for _ in range(10):
                     time.sleep(1)
                     cur = torch.cuda.mem_get_info()[0] / (1024 ** 2)
-                    if cur >= 7200:
+                    if cur >= 5800:
                         print(f"[LLAMA] VRAM recovered to {cur:.0f} MiB, proceeding",
                               file=sys.stderr, flush=True)
                         break
@@ -398,7 +399,6 @@ def start_llama(port=8080, exe_path=None, model_path=None,
         "--cache-ram", "5000",
         "--parallel", "1",
         "--kv-unified",
-        "--no-mmap",
         "--no-warmup",
     ]
 
