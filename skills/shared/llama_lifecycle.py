@@ -67,8 +67,8 @@ def _port_open(host, port, timeout=2):
         s.close()
 
 
-def _wait_for_vram_stable(initial_free=None, stable_threshold=50, max_wait=10,
-                          label="[LLAMA]"):
+def _wait_for_vram_stable(initial_free=None, stable_threshold=50, max_wait=30,
+                          min_free_mb=None, label="[LLAMA]"):
     """
     等待 CUDA VRAM 稳定（释放完成）。
 
@@ -76,8 +76,9 @@ def _wait_for_vram_stable(initial_free=None, stable_threshold=50, max_wait=10,
         initial_free: 初始空闲 VRAM (MiB)；如果为 None 则自动获取
         stable_threshold: 两次检测差值 < 此值即认为稳定 (MiB)
         max_wait: 最大等待时间 (秒)
+        min_free_mb: 要求至少空闲这么多 MiB 才返回（如 6000=llama 需要 ~5.8GB）
 
-    返回最终稳定时的空闲 VRAM (MiB)。
+    返回最终稳定时的空闲 VRAM (MiB)。如果 max_wait 内达不到 min_free_mb 则最多等到底。
     """
     try:
         import torch
@@ -94,17 +95,37 @@ def _wait_for_vram_stable(initial_free=None, stable_threshold=50, max_wait=10,
         print(f"{label} CUDA sync done, free VRAM: {free_vram:.0f} MiB",
               file=sys.stderr, flush=True)
 
+        stable_count = 0
+        peak_free = free_vram
         for i in range(max_wait):
             time.sleep(1)
             cur_free = torch.cuda.mem_get_info()[0] / (1024 ** 2)
+            peak_free = max(peak_free, cur_free)
             if abs(cur_free - free_vram) < stable_threshold:
-                print(f"{label} VRAM stable at {cur_free:.0f} MiB ({i + 1}s)",
-                      file=sys.stderr, flush=True)
-                return cur_free
+                stable_count += 1
+                if stable_count >= 3:  # 连续 3s 内波动 < threshold
+                    if min_free_mb and cur_free < min_free_mb:
+                        print(f"{label} VRAM stable at {cur_free:.0f} MiB but below "
+                              f"{min_free_mb} MiB minimum, waiting more...",
+                              file=sys.stderr, flush=True)
+                        stable_count = 0  # reset, keep waiting
+                        free_vram = cur_free
+                        continue
+                    print(f"{label} VRAM stable at {cur_free:.0f} MiB "
+                          f"(peak {peak_free:.0f}, {i + 1}s)",
+                          file=sys.stderr, flush=True)
+                    return cur_free
+            else:
+                stable_count = 0
             free_vram = cur_free
 
-        print(f"{label} VRAM still settling after {max_wait}s ({free_vram:.0f} MiB)",
+        print(f"{label} VRAM still settling after {max_wait}s "
+              f"(current {free_vram:.0f} MiB, peak {peak_free:.0f})",
               file=sys.stderr, flush=True)
+        if min_free_mb and free_vram < min_free_mb:
+            print(f"{label} WARNING: VRAM ({free_vram:.0f} MiB) below required "
+                  f"{min_free_mb} MiB — OOM risk high!",
+                  file=sys.stderr, flush=True)
         return free_vram
     except Exception:
         print(f"{label} torch not available, sleep 3s for GPU cleanup",
@@ -294,8 +315,10 @@ def stop_llama(port=8080, wait_vram_stable=True):
               file=sys.stderr, flush=True)
 
     # CUDA VRAM 稳定检测（防止 --no-mmap 模式下 OOM）
+    # llama-server 需要约 5.7-6.2 GB，要求至少 6000 MiB 空闲
+    # max_wait=30s 给 ComfyUI/TTS 足够时间完全释放 GPU 内存
     if wait_vram_stable:
-        _wait_for_vram_stable()
+        _wait_for_vram_stable(min_free_mb=6000, max_wait=30)
 
     return True
 
