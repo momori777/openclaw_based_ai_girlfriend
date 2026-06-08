@@ -233,6 +233,7 @@ def acquire_lock(lock_file, label="skill"):
     pid = os.getpid()
     exe_path = sys.executable
     lock_data = json.dumps({'pid': pid, 'exe': exe_path})
+    os.makedirs(os.path.dirname(lock_file), exist_ok=True)
     with open(lock_file, 'w') as f:
         f.write(lock_data)
     print(f"[LOCK] 已获取锁 (PID={pid}, exe={exe_path})",
