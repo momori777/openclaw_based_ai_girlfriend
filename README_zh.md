@@ -75,9 +75,13 @@ huggingface-cli download TAOTAO777/ai-girlfriend-natsume gpt-sovits-weights/ --l
 
 如果 HuggingFace 被墙，可以去度盘下载：https://pan.baidu.com/s/1sLeSyVp76yzWcR3Q4pX0kA?pwd=0721
 
-### 本地路径
+### 本地配置
 
-按照 `models.yaml` 放置下载好的文件。脚本中的绝对路径需要改成你自己的路径。
+1. **运行 `quick_setup.ps1`** — 交互式向导，自动生成 `config.yaml`
+2. （或手动）复制 `config.example.yaml` → `config.yaml`，自己编辑
+3. 按 `models.yaml` 放置下载好的模型文件，然后在 `config.yaml` 里填写对应路径
+
+所有 Python/PS 脚本都从 `config.yaml` 读取路径 — 不需要手动改硬编码。
 
 > ⚠️ **免责声明**：所有模型均为社区开源模型。本项目仅提供镜像分发，非盈利性质。版权归原作者所有。
 

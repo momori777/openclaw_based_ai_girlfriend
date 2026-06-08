@@ -73,9 +73,13 @@ huggingface-cli download TAOTAO777/ai-girlfriend-natsume comfyui-checkpoints/ --
 huggingface-cli download TAOTAO777/ai-girlfriend-natsume gpt-sovits-weights/ --local-dir ./gpt-sovits-weights
 ```
 
-### Local Paths
+### Local Configuration
 
-Place downloaded files according to `models.yaml`. Absolute paths in scripts must be updated to match your setup.
+1. **Run `quick_setup.ps1`** — interactive wizard that generates `config.yaml` with your local paths
+2. (Alternative) Copy `config.example.yaml` → `config.yaml` and edit manually
+3. Place downloaded model files according to `models.yaml`, then update `config.yaml` paths
+
+All Python/PS scripts read paths from `config.yaml` — no hardcoded paths to edit.
 
 > ⚠️ **Disclaimer**: All models are community open-source. This project only provides mirror distribution, non-profit. Copyright belongs to original authors.
 
