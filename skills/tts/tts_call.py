@@ -34,23 +34,23 @@ from skills.shared.llama_lifecycle import (
 )
 
 # Change to WebUI directory
-WEBUI_DIR = r"$env:USERPROFILE\Desktop\vllm\GPT-SoVITS-v2pro-20250604-nvidia50"
+WEBUI_DIR = r"C:\Users\TK\Desktop\vllm\GPT-SoVITS-v2pro-20250604-nvidia50"
 os.chdir(WEBUI_DIR)
 sys.path.insert(0, WEBUI_DIR)
 
 # ========== 路径配置 ==========
-OUTPUT_DIR = r"$env:USERPROFILE\.openclaw\workspace\qqbot\audio"
+OUTPUT_DIR = r"C:\Users\TK\.openclaw\workspace\qqbot\audio"
 LOCK_FILE = os.path.join(OUTPUT_DIR, ".tts_running.lock")
 
 # ========== Llama Server 配置 ==========
-LLAMA_LOG_DIR = r"$env:USERPROFILE\Desktop\vllm\restart-logs"
-LLAMA_EXE_PATH = r"$env:USERPROFILE\Desktop\vllm\llama-b9222-bin-win-cuda-12.4-x64\llama-server.exe"
-LLAMA_MODEL_PATH = r"$env:USERPROFILE\Desktop\vllm\models\Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Compact.gguf"
-RESTART_SCRIPT = r"$env:USERPROFILE\Desktop\vllm\restart-llama.ps1"
+LLAMA_LOG_DIR = r"C:\Users\TK\Desktop\vllm\restart-logs"
+LLAMA_EXE_PATH = r"C:\Users\TK\Desktop\vllm\llama-b9222-bin-win-cuda-12.4-x64\llama-server.exe"
+LLAMA_MODEL_PATH = r"C:\Users\TK\Desktop\vllm\models\Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Compact.gguf"
+RESTART_SCRIPT = r"C:\Users\TK\Desktop\vllm\restart-llama.ps1"
 LLAMA_PORT = 8080
 
 # ========== 硬超时（防止子进程卡死不退出，导致 gateway session 锁死） ==========
-HARD_TIMEOUT = 420  # 秒，超过这个时间强制退出（推理最长5min + llama重启等待最长2min，留余量）
+HARD_TIMEOUT = 300  # 秒，超过这个时间强制退出（推理最长3min + llama重启等待最长2min，留余量）
 
 
 def slugify(text, max_len=20):
@@ -64,7 +64,7 @@ def slugify(text, max_len=20):
 
 # ========== 参考音频目录 ==========
 REF_DIR = os.path.join(
-    r"$env:USERPROFILE\.openclaw\workspace\qqbot\skills\tts",
+    r"C:\Users\TK\.openclaw\workspace\qqbot\skills\tts",
     r"ref_wavs"
 )
 

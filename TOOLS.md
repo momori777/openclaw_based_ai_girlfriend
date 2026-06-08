@@ -50,4 +50,16 @@ sessions_spawn(
 
 ### 输出
 
-合成 wav 后，复制到 `~/.openclaw/media/qqbot/audio/`，用 `<qqmedia>媒体目录路径</qqmedia>` 标签发送音频。
+合成 wav 后，PS 脚本已将文件复制到 `C:\Users\TK\.openclaw\media\qqbot\audio\`，
+并输出 `DONE:` 路径和 `<qqmedia>` 标签。子 session 会原样透传这些行。
+
+## ComfyUI 画图
+
+### 输出
+
+生成图片后，PS 脚本已将文件复制到 `C:\Users\TK\.openclaw\media\qqbot\images\`，
+并输出 `DONE:` 路径和 `<qqmedia>` 标签。子 session 会原样透传这些行。
+
+### 主 session 收到 DONE 时
+
+提取路径，输出 MEDIA:路径 和 <qqmedia>路径，附一句角色对话。

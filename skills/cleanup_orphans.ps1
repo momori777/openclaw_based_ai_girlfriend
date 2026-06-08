@@ -1,4 +1,4 @@
-param(
+﻿param(
     [int]$MaxAgeSeconds = 600,
     [switch]$WhatIf
 )
@@ -24,7 +24,7 @@ if (-not $llamaHealthy) {
     } else {
         Write-Host "[llama] not running, starting..." -ForegroundColor Yellow
     }
-    & "{{RESTART_SCRIPT}}"
+    & "C:\Users\TK\Desktop\vllm\restart-llama.ps1"
     Write-Host "[llama] restart script executed" -ForegroundColor Green
 } else {
     Write-Host "[llama] healthy (PID=$($llamaRunning.Id))" -ForegroundColor Green
@@ -98,8 +98,8 @@ if ($WhatIf) {
 
 # Clean stale lock files
 $LockFiles = @(
-    "{{COMFY_OUTPUT}}\.comfyui_running.lock",
-    "{{TTS_OUTPUT}}\.tts_running.lock"
+    "C:\Users\TK\.openclaw\workspace\comfyui_output\.comfyui_running.lock",
+    "C:\Users\TK\.openclaw\media\qqbot\audio\.tts_running.lock"
 )
 foreach ($LockFile in $LockFiles) {
     if (-not (Test-Path $LockFile)) { continue }
@@ -116,7 +116,7 @@ foreach ($LockFile in $LockFiles) {
 }
 
 # ---- Task flag cleanup ----
-$TaskFlagDir = "{{TASK_FLAGS}}"
+$TaskFlagDir = "C:\Users\TK\.openclaw\workspace\.task_flags"
 if (Test-Path $TaskFlagDir) {
     $FlagCutoff = (Get-Date).AddHours(-1)
     Get-ChildItem "$TaskFlagDir\*.done","$TaskFlagDir\*.meta.json" -ErrorAction SilentlyContinue | Where-Object {
@@ -135,7 +135,7 @@ if (Test-Path $TaskFlagDir) {
 
 # ---- Session registry + orphan files cleanup ----
 # 动态扫描所有 agent sessions 目录（main、qqbot、shiki/telegram 等自动覆盖）
-$AgentsRoot = "{{AGENTS_ROOT}}"
+$AgentsRoot = "C:\Users\TK\.openclaw\agents"
 $SessionDirs = @()
 if (Test-Path $AgentsRoot) {
     Get-ChildItem $AgentsRoot -Directory | ForEach-Object {

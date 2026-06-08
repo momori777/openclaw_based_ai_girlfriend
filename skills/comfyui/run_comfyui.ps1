@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$positive,
     [string]$negative,
     [int]$seed = -1,
@@ -33,20 +33,8 @@ if ($exitOk -and $imgPath -and (Test-Path $imgPath)) {
     Copy-Item $imgPath $mediaFile -Force -ErrorAction Stop
     @{status='ok';file=$mediaFile;type='comfyui'} | ConvertTo-Json -Compress | Set-Content $flagFile
 
-    # Wait for llama to be fully ready
-    # Python script internally does start_llama + 3-stage check, this is secondary safety
-    Write-Output 'ComfyUI done, confirming llama ready...'
-    for ($i = 0; $i -lt 180; $i++) {
-        try {
-            $resp = Invoke-WebRequest -Uri 'http://127.0.0.1:8080/health' -TimeoutSec 2 -ErrorAction Stop
-            if ($resp.StatusCode -eq 200) {
-                Write-Output "LLAMA_READY after $i seconds"
-                break
-            }
-        } catch {}
-        Start-Sleep 1
-    }
-
+    # Python script internally does start_llama + 3-stage check
+    # No need to re-verify here — just confirm quickly and output
     Write-Output "DONE: $mediaFile"
     Write-Output "<qqmedia>$mediaFile</qqmedia>"
 } else {
@@ -54,16 +42,5 @@ if ($exitOk -and $imgPath -and (Test-Path $imgPath)) {
 
     # ComfyUI failed, ensure llama is restarted
     Write-Output 'Restarting llama after failed ComfyUI run...'
-    & '{{RESTART_SCRIPT}}'
-}
-
-# Final fallback: if llama still not responding, restart it
-$llamaAlive = $false
-try {
-    $resp = Invoke-WebRequest -Uri 'http://127.0.0.1:8080/health' -TimeoutSec 5 -ErrorAction Stop
-    $llamaAlive = ($resp.StatusCode -eq 200)
-} catch {}
-if (-not $llamaAlive) {
-    Write-Output '[LLAMA FALLBACK] Llama not responding, restarting...'
-    & '{{RESTART_SCRIPT}}'
+    & 'C:\Users\TK\Desktop\vllm\restart-llama.ps1'
 }

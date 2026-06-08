@@ -4,7 +4,7 @@
 # 作用: 检查 llama-server 健康，宕机则自动重启
 
 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-$logDir = "{{LLAMA_LOG_DIR}}"
+$logDir = "C:\Users\TK\Desktop\vllm\restart-logs"
 $logFile = "$logDir\watchdog.log"
 $null = New-Item -ItemType Directory -Path $logDir -Force -ErrorAction SilentlyContinue
 
@@ -21,7 +21,7 @@ Write-WatchdogLog "=== watchdog check ==="
 $llamaProc = Get-Process llama-server -ErrorAction SilentlyContinue
 if (-not $llamaProc) {
     Write-WatchdogLog "llama-server not running, starting..."
-    & "{{RESTART_SCRIPT}}"
+    & "C:\Users\TK\Desktop\vllm\restart-llama.ps1"
     Write-WatchdogLog "done"
     exit 0
 }
@@ -47,6 +47,6 @@ if ($healthy) {
 Write-WatchdogLog "process alive but port dead, restarting..."
 Stop-Process -Id $llamaProc.Id -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 2
-& "{{RESTART_SCRIPT}}"
+& "C:\Users\TK\Desktop\vllm\restart-llama.ps1"
 Write-WatchdogLog "done"
 exit 0
