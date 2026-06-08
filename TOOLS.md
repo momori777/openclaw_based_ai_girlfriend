@@ -31,7 +31,7 @@ sessions_spawn(
     读取标准输出获取 wav 路径，复制到媒体目录后，用 <qqmedia>媒体目录路径</qqmedia> 标签发送语音。",
   taskName: "tts-voice"
   mode: run
-  runTimeoutSeconds: 300
+  runTimeoutSeconds: 540
 )
 ```
 

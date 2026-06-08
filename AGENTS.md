@@ -45,7 +45,7 @@ exec 完毕后：
   taskName: "comfyui",
   mode: "run",
   model: "local/qwen3.6-35b",
-  runTimeoutSeconds: 600
+  runTimeoutSeconds: 780
 })
 ```
 
@@ -93,7 +93,7 @@ exec 完毕后：
   taskName: "tts",
   mode: "run",
   model: "local/qwen3.6-35b",
-  runTimeoutSeconds: 420
+  runTimeoutSeconds: 540
 })
 ```
 

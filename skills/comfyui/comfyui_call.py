@@ -34,7 +34,7 @@ RESTART_SCRIPT = r"C:\Users\TK\Desktop\vllm\restart-llama.ps1"
 LLAMA_PORT = 8080
 
 # ========== 硬超时（防止子进程卡死不退出，导致 gateway session 锁死） ==========
-HARD_TIMEOUT = 600  # 秒，超过这个时间强制退出
+HARD_TIMEOUT = 720  # 秒，超过这个时间强制退出（跑图最长8min + llama重启等待最长3min，留余量）
 _deadline = None
 
 import re

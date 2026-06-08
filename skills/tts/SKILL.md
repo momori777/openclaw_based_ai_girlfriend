@@ -57,7 +57,7 @@ powershell -ExecutionPolicy Bypass -File "C:\Users\TK\.openclaw\workspace\skills
   mode: "run",
   model: "local/qwen3.6-35b",
   fallbacks: ["deepseek/deepseek-v4-flash"],
-  runTimeoutSeconds: 300
+  runTimeoutSeconds: 540
 })
 ```
 
@@ -124,7 +124,7 @@ MEDIA:C:\Users\TK\.openclaw\media\qqbot\audio\tts_20260604xxxxxx.wav
 **A**: Python 脚本内部三阶段检测 + PS 脚本末尾 /health 双重确认。若仍超时，检查 /completion 阶段是否卡住。
 
 ### Q: 子进程被 gateway 杀掉/孤儿进程？
-**A**: tts_call.py 已内置 TimeoutGuard(HARD_TIMEOUT=300s) + atexit 清理。
+**A**: tts_call.py 已内置 TimeoutGuard(HARD_TIMEOUT=420s) + atexit 清理。
 
 ### Q: 并发调用导致两个 TTS 同时跑？
 **A**: tts_call.py 有文件锁 (`.tts_running.lock`)，会跳过重复调用。

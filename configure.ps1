@@ -202,6 +202,8 @@ $oldRefDir       = "C:\Users\TK\.openclaw\workspace\qqbot\skills\tts"
 $oldMediaImages  = "C:\Users\TK\.openclaw\media\qqbot\images"
 $oldMediaAudio   = "C:\Users\TK\.openclaw\media\qqbot\audio"
 $oldTaskFlags    = "C:\Users\TK\.openclaw\workspace\.task_flags"
+$oldLockComfy    = "C:\Users\TK\.openclaw\workspace\comfyui_output\.comfyui_running.lock"
+$oldLockTts      = "C:\Users\TK\.openclaw\workspace\qqbot\audio\.tts_running.lock"
 $oldSessionsDir  = "C:\Users\TK\.openclaw\agents\main\sessions"
 
 $newWorkspace    = $Workspace
@@ -279,8 +281,8 @@ Replace-InFile "skills\llama-watchdog.ps1" $llama_watchdog_replacements
 # ===== cleanup_orphans.ps1 =====
 $cleanup_replacements = @{
     "$oldWorkspace\restart-llama.ps1"       = Join-Path $newWorkspace "restart-llama.ps1"
-    "$oldWorkspace\comfyui_output\.comfyui_running.lock" = Join-Path $newComfyOutput ".comfyui_running.lock"
-    "$oldWorkspace\tts_output\.tts_running.lock"         = Join-Path $newTtsOutput ".tts_running.lock"
+    $oldLockComfy    = Join-Path $newComfyOutput ".comfyui_running.lock"
+    $oldLockTts      = Join-Path $newTtsOutput ".tts_running.lock"
     $oldTaskFlags    = $newTaskFlags
     $oldSessionsDir  = $newSessionsDir
 }

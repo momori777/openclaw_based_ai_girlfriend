@@ -57,7 +57,7 @@ powershell -ExecutionPolicy Bypass -File "C:\Users\TK\.openclaw\workspace\skills
   mode: "run",
   model: "local/qwen3.6-35b",
   fallbacks: ["deepseek/deepseek-v4-flash"],
-  runTimeoutSeconds: 600
+  runTimeoutSeconds: 780
 })
 ```
 
@@ -99,7 +99,7 @@ MEDIA:C:\Users\TK\.openclaw\media\qqbot\images\comfyui_20260604xxxxxxxx.png
 **A**: Python 脚本内部三阶段检测 + PS 脚本末尾 /health 双重确认。若仍超时，检查 /completion 阶段是否卡住。
 
 ### Q: 子进程被 gateway 杀掉/孤儿进程？
-**A**: run_comfyui.ps1 已内置 TimeoutGuard(HARD_TIMEOUT=600s) + atexit 清理。
+**A**: run_comfyui.ps1 已内置 TimeoutGuard(HARD_TIMEOUT=720s) + atexit 清理。
 
 ### Q: 并发调用导致两个 ComfyUI 同时跑？
 **A**: run_comfyui.ps1 有文件锁 (`.comfyui_running.lock`)，会跳过重复调用。

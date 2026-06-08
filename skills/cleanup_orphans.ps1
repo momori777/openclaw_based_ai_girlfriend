@@ -99,7 +99,7 @@ if ($WhatIf) {
 # Clean stale lock files
 $LockFiles = @(
     "C:\Users\TK\.openclaw\workspace\comfyui_output\.comfyui_running.lock",
-    "C:\Users\TK\.openclaw\workspace\tts_output\.tts_running.lock"
+    "C:\Users\TK\.openclaw\workspace\qqbot\audio\.tts_running.lock"
 )
 foreach ($LockFile in $LockFiles) {
     if (-not (Test-Path $LockFile)) { continue }
