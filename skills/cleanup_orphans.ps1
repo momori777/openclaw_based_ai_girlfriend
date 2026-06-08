@@ -134,10 +134,15 @@ if (Test-Path $TaskFlagDir) {
 }
 
 # ---- Session registry + orphan files cleanup ----
-$SessionDirs = @(
-    "{{SESSIONS_MAIN}}",
-    "{{SESSIONS_QQBOT}}"
-)
+# 动态扫描所有 agent sessions 目录（main、qqbot、shiki/telegram 等自动覆盖）
+$AgentsRoot = "{{AGENTS_ROOT}}"
+$SessionDirs = @()
+if (Test-Path $AgentsRoot) {
+    Get-ChildItem $AgentsRoot -Directory | ForEach-Object {
+        $s = Join-Path $_.FullName "sessions"
+        if (Test-Path $s) { $SessionDirs += $s }
+    }
+}
 
 foreach ($AgentDir in $SessionDirs) {
     if (-not (Test-Path $AgentDir)) { continue }
