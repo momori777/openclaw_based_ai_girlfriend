@@ -6,7 +6,7 @@ param(
 
 $ErrorActionPreference = 'Continue'
 
-$taskId = 'tts_' + (Get-Date -Format 'HHmmss') + '_' + (Get-Random -Minimum 1000 -Maximum 9999)
+$taskId = 'tts_' + (Get-Date -Format 'yyyyMMddHHmmss')
 $flagDir = 'C:\Users\TK\.openclaw\workspace\.task_flags'
 $flagFile = Join-Path $flagDir "$taskId.done"
 mkdir $flagDir -Force -ErrorAction SilentlyContinue | Out-Null
@@ -45,6 +45,11 @@ if ($exitOk -and $wavPath -and (Test-Path $wavPath)) {
     }
 
     Write-Output "DONE: $mediaFile"
+    Write-Output "<qqmedia>$mediaFile</qqmedia>"
 } else {
     Write-Output "FAILED: exit=$LASTEXITCODE path=$wavPath"
+
+    # TTS failed, ensure llama is restarted
+    Write-Output 'Restarting llama after failed TTS run...'
+    & 'C:\Users\TK\Desktop\vllm\restart-llama.ps1'
 }

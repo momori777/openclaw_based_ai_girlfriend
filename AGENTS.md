@@ -45,7 +45,6 @@ exec 完毕后：
   taskName: "comfyui",
   mode: "run",
   model: "local/qwen3.6-35b",
-  fallbacks: ["deepseek/deepseek-v4-flash"],
   runTimeoutSeconds: 600
 })
 ```
@@ -94,7 +93,6 @@ exec 完毕后：
   taskName: "tts",
   mode: "run",
   model: "local/qwen3.6-35b",
-  fallbacks: ["deepseek/deepseek-v4-flash"],
   runTimeoutSeconds: 420
 })
 ```

@@ -9,7 +9,7 @@ param(
     [string]$checkpoint = 'WAI-Nsfw-Illustrious-17.safetensors'
 )
 
-# Must be Continue - comfyui_call.py writes [LOCK]/[LLAMA] to stderr, and Stop would abort
+$ErrorActionPreference = 'Continue'
 
 $taskId = 'comfyui_' + (Get-Date -Format 'yyyyMMddHHmmss')
 $flagDir = 'C:\Users\TK\.openclaw\workspace\.task_flags'
@@ -48,6 +48,11 @@ if ($exitOk -and $imgPath -and (Test-Path $imgPath)) {
     }
 
     Write-Output "DONE: $mediaFile"
+    Write-Output "<qqmedia>$mediaFile</qqmedia>"
 } else {
     Write-Output "FAILED: exit=$LASTEXITCODE path=$imgPath"
+
+    # ComfyUI failed, ensure llama is restarted
+    Write-Output 'Restarting llama after failed ComfyUI run...'
+    & 'C:\Users\TK\Desktop\vllm\restart-llama.ps1'
 }
