@@ -1,0 +1,43 @@
+# AI Girlfriend 四季夏目 - 路径配置模板
+# 
+# 使用方法: 运行 quick_setup.ps1 交互式填写，或复制此文件为 config.yaml 手动编辑
+# config.yaml 已被 .gitignore 忽略，不会提交到 GitHub
+
+# ============================================================
+# OpenClaw workspace (agent 工作区)
+# 例: C:\\Users\\你的用户名\\.openclaw\\workspace
+# ============================================================
+workspace: "{{OPENCLAW_WORKSPACE}}"
+
+# ============================================================
+# 媒体输出目录 (qqbot channel 的发文件目录)
+# 例: C:\\Users\\你的用户名\\.openclaw\\media\\qqbot
+# ============================================================
+media_qqbot_audio: "{{MEDIA_AUDIO_DIR}}"
+media_qqbot_images: "{{MEDIA_IMAGES_DIR}}"
+
+# ============================================================
+# ComfyUI 文生图 (秋叶整合包或原版)
+# ============================================================
+comfyui_root: "{{COMFYUI_ROOT}}"
+comfyui_python: "{{COMFYUI_PYTHON}}"
+comfyui_checkpoints_dir: "{{COMFYUI_CHECKPOINTS}}"
+# ComfyUI 推理过程中的临时输出; PS脚本会将成品 copy 到 media_qqbot_images
+comfyui_temp_output_dir: "{{COMFYUI_TEMP_OUTPUT}}"
+
+# ============================================================
+# GPT-SoVITS v2 Pro (TTS)
+# ============================================================
+sovits_root: "{{SOVITS_ROOT}}"
+sovits_python: "{{SOVITS_PYTHON}}"
+# TTS 输出 wav 后, PS脚本会将成品 copy 到 media_qqbot_audio
+tts_temp_output_dir: "{{TTS_TEMP_OUTPUT}}"
+
+# ============================================================
+# llama.cpp (本地 LLM)
+# ============================================================
+llama_exe: "{{LLAMA_EXE}}"
+llama_model: "{{LLAMA_MODEL_PATH}}"
+llama_log_dir: "{{LLAMA_LOG_DIR}}"
+restart_script: "{{RESTART_SCRIPT}}"
+llama_port: 8080
