@@ -24,7 +24,7 @@ if (-not $llamaHealthy) {
     } else {
         Write-Host "[llama] not running, starting..." -ForegroundColor Yellow
     }
-    & "{{WORKSPACE}}\restart-llama.ps1"
+    & "{{RESTART_SCRIPT}}"
     Write-Host "[llama] restart script executed" -ForegroundColor Green
 } else {
     Write-Host "[llama] healthy (PID=$($llamaRunning.Id))" -ForegroundColor Green
@@ -135,7 +135,8 @@ if (Test-Path $TaskFlagDir) {
 
 # ---- Session registry + orphan files cleanup ----
 $SessionDirs = @(
-    "{{SESSIONS_DIR}}"
+    "{{SESSIONS_MAIN}}",
+    "{{SESSIONS_QQBOT}}"
 )
 
 foreach ($AgentDir in $SessionDirs) {

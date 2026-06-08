@@ -117,7 +117,8 @@ Write-Host "  ✓ .task_flags: $TaskFlags" -ForegroundColor Green
 Write-Host ""
 
 # 额外路径
-$SessionsDir = Join-Path $userHome ".openclaw\agents\main\sessions"
+$SessionsMain = Join-Path $userHome ".openclaw\agents\main\sessions"
+$SessionsQQBot = Join-Path $userHome ".openclaw\agents\qqbot\sessions"
 
 # ========== 确认 ==========
 Write-Host "============================================================" -ForegroundColor Magenta
@@ -142,7 +143,8 @@ $config = @{
     MediaImages     = $MediaImages
     MediaAudio      = $MediaAudio
     TaskFlags       = $TaskFlags
-    SessionsDir     = $SessionsDir
+    SessionsMain    = $SessionsMain
+    SessionsQQBot   = $SessionsQQBot
 }
 foreach ($k in $config.Keys | Sort-Object) {
     Write-Host ("  {0,-20} = {1}" -f $k, $config[$k]) -ForegroundColor Gray
@@ -180,7 +182,8 @@ $placeholders = @{
     '{{MEDIA_IMAGES}}'    = $MediaImages
     '{{MEDIA_AUDIO}}'     = $MediaAudio
     '{{TASK_FLAGS}}'      = $TaskFlags
-    '{{SESSIONS_DIR}}'    = $SessionsDir
+    '{{SESSIONS_MAIN}}'   = $SessionsMain
+    '{{SESSIONS_QQBOT}}'  = $SessionsQQBot
 }
 
 # ========== 替换函数 ==========
