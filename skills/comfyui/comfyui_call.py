@@ -27,16 +27,16 @@ from skills.shared.llama_lifecycle import (
 )
 
 # ========== 路径配置 ==========
-COMFYUI_ROOT = r"{{COMFYUI_ROOT}}"
-PYTHON_PATH = r"{{COMFYUI_PYTHON}}"
-CHECKPOINTS_DIR = r"{{CHECKPOINTS_DIR}}"
-OUTPUT_DIR = r"{{COMFY_OUTPUT}}"
+COMFYUI_ROOT = r"E:\comfyui\ComfyUI-aki-v3\ComfyUI"
+PYTHON_PATH = r"E:\comfyui\ComfyUI-aki-v3\python\python.exe"
+CHECKPOINTS_DIR = r"E:\comfyui\ComfyUI-aki-v3\ComfyUI\models\checkpoints"
+OUTPUT_DIR = r"C:\Users\TK\.openclaw\workspace\comfyui"
 
 # ========== Llama Server 配置 ==========
-LLAMA_LOG_DIR = r"{{LLAMA_LOG_DIR}}"
-LLAMA_EXE_PATH = r"{{LLAMA_EXE}}"
-LLAMA_MODEL_PATH = r"{{LLAMA_MODEL}}"
-RESTART_SCRIPT = r"{{RESTART_SCRIPT}}"
+LLAMA_LOG_DIR = r"C:\Users\TK\Desktop\vllm\restart-logs"
+LLAMA_EXE_PATH = r"C:\Users\TK\Desktop\vllm\llama-b9222-bin-win-cuda-12.4-x64\llama-server.exe"
+LLAMA_MODEL_PATH = r"C:\Users\TK\Desktop\vllm\models\Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Compact.gguf"
+RESTART_SCRIPT = r"C:\Users\TK\Desktop\vllm\restart-llama.ps1"
 LLAMA_PORT = 8080
 
 # ========== 硬超时（防止子进程卡死不退出，导致 gateway session 锁死） ==========
@@ -211,13 +211,18 @@ def run_txt2img(positive_prompt, negative_prompt, seed, width, height,
 
     if manage_llama:
         sys.stderr.flush()
-        start_llama(
+        ok = start_llama(
             port=LLAMA_PORT,
             exe_path=LLAMA_EXE_PATH,
             model_path=LLAMA_MODEL_PATH,
             log_dir=LLAMA_LOG_DIR,
         )
-        print(f"[LLAMA] 已就绪，继续输出结果", file=sys.stderr, flush=True)
+        if not ok:
+            print(f"[LLAMA] 启动失败(VRAM不足或超时)，图像已保存到 {out_path}",
+                  file=sys.stderr, flush=True)
+            # 仍然输出图像路径，让 PS 脚本负责任务标记
+        else:
+            print(f"[LLAMA] 已就绪，继续输出结果", file=sys.stderr, flush=True)
 
     sys.stdout.write(out_path + '\n')
     sys.stdout.flush()

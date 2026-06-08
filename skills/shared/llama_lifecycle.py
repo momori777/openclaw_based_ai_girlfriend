@@ -315,10 +315,10 @@ def stop_llama(port=8080, wait_vram_stable=True):
               file=sys.stderr, flush=True)
 
     # CUDA VRAM 稳定检测（防止 --no-mmap 模式下 OOM）
-    # llama-server 需要约 5.7-6.2 GB，要求至少 6000 MiB 空闲
-    # max_wait=30s 给 ComfyUI/TTS 足够时间完全释放 GPU 内存
+    # llama-server --no-mmap 需要约 7.0-7.5 GB，要求至少 7500 MiB 空闲
+    # max_wait=60s 给 ComfyUI/TTS 足够时间完全释放 GPU 内存（包括进程退出）
     if wait_vram_stable:
-        _wait_for_vram_stable(min_free_mb=6000, max_wait=30)
+        _wait_for_vram_stable(min_free_mb=7500, max_wait=60)
 
     return True
 
@@ -332,6 +332,38 @@ def start_llama(port=8080, exe_path=None, model_path=None,
     返回 True 表示启动成功，False 表示失败。
     """
     print("[LLAMA] 启动 llama-server...", file=sys.stderr, flush=True)
+
+    # 启动前再次检查 VRAM（防止 stop_llama 的检测和实际启动之间 VRAM 被吃）
+    try:
+        import torch
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+            torch.cuda.empty_cache()
+            time.sleep(0.5)
+            free = torch.cuda.mem_get_info()[0] / (1024 ** 2)
+            total = torch.cuda.mem_get_info()[1] / (1024 ** 2)
+            if free < 7000:
+                print(f"[LLAMA] ABORT: only {free:.0f} MiB free / {total:.0f} MiB total, "
+                      f"llama needs ~7500 MiB. Waiting 10s for VRAM recovery...",
+                      file=sys.stderr, flush=True)
+                # 再等 10s，期间监控 VRAM
+                for _ in range(10):
+                    time.sleep(1)
+                    cur = torch.cuda.mem_get_info()[0] / (1024 ** 2)
+                    if cur >= 7200:
+                        print(f"[LLAMA] VRAM recovered to {cur:.0f} MiB, proceeding",
+                              file=sys.stderr, flush=True)
+                        break
+                else:
+                    cur = torch.cuda.mem_get_info()[0] / (1024 ** 2)
+                    print(f"[LLAMA] ABORT: still only {cur:.0f} MiB free after extra wait, "
+                          f"refusing to start llama (would OOM)",
+                          file=sys.stderr, flush=True)
+                    return False
+            print(f"[LLAMA] VRAM check: {free:.0f} MiB free / {total:.0f} MiB total - OK",
+                  file=sys.stderr, flush=True)
+    except Exception:
+        pass  # torch 不可用时跳过
 
     # 先确保旧进程被清理干净（端口可能未完全释放）
     if _port_open("127.0.0.1", port, timeout=1):

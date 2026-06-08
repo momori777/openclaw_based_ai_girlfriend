@@ -12,15 +12,15 @@ param(
 $ErrorActionPreference = 'Continue'
 
 $taskId = 'comfyui_' + (Get-Date -Format 'yyyyMMddHHmmss')
-$flagDir = '{{TASK_FLAGS}}'
+$flagDir = 'C:\Users\TK\.openclaw\workspace\.task_flags'
 $flagFile = Join-Path $flagDir "$taskId.done"
 mkdir $flagDir -Force -ErrorAction SilentlyContinue | Out-Null
 
-$mediaDir = '{{MEDIA_IMAGES}}'
+$mediaDir = 'C:\Users\TK\.openclaw\media\qqbot\images'
 mkdir $mediaDir -Force -ErrorAction SilentlyContinue | Out-Null
 
-$python = '{{COMFYUI_PYTHON}}'
-$script = '{{WORKSPACE}}\skills\comfyui\comfyui_call.py'
+$python = 'E:\comfyui\ComfyUI-aki-v3\python\python.exe'
+$script = 'C:\Users\TK\.openclaw\workspace\skills\comfyui\comfyui_call.py'
 
 # Run ComfyUI - stderr has [LOCK]/[LLAMA] logs, stdout has the image path
 $rawOutput = & $python $script $positive $negative $seed $width $height $steps $cfg $checkpoint 2>$null
@@ -54,5 +54,16 @@ if ($exitOk -and $imgPath -and (Test-Path $imgPath)) {
 
     # ComfyUI failed, ensure llama is restarted
     Write-Output 'Restarting llama after failed ComfyUI run...'
+    & '{{RESTART_SCRIPT}}'
+}
+
+# Final fallback: if llama still not responding, restart it
+$llamaAlive = $false
+try {
+    $resp = Invoke-WebRequest -Uri 'http://127.0.0.1:8080/health' -TimeoutSec 5 -ErrorAction Stop
+    $llamaAlive = ($resp.StatusCode -eq 200)
+} catch {}
+if (-not $llamaAlive) {
+    Write-Output '[LLAMA FALLBACK] Llama not responding, restarting...'
     & '{{RESTART_SCRIPT}}'
 }

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 GPT-SoVITS TTS 调用脚本 — 子进程自动化流程
 用法: python tts_call.py "目标文本" "语言代码" [情绪模式]
@@ -34,19 +34,19 @@ from skills.shared.llama_lifecycle import (
 )
 
 # Change to WebUI directory
-WEBUI_DIR = r"{{SOVITS_DIR}}"
+WEBUI_DIR = r"$env:USERPROFILE\Desktop\vllm\GPT-SoVITS-v2pro-20250604-nvidia50"
 os.chdir(WEBUI_DIR)
 sys.path.insert(0, WEBUI_DIR)
 
 # ========== 路径配置 ==========
-OUTPUT_DIR = r"{{TTS_OUTPUT}}"
+OUTPUT_DIR = r"$env:USERPROFILE\.openclaw\workspace\qqbot\audio"
 LOCK_FILE = os.path.join(OUTPUT_DIR, ".tts_running.lock")
 
 # ========== Llama Server 配置 ==========
-LLAMA_LOG_DIR = r"{{LLAMA_LOG_DIR}}"
-LLAMA_EXE_PATH = r"{{LLAMA_EXE}}"
-LLAMA_MODEL_PATH = r"{{LLAMA_MODEL}}"
-RESTART_SCRIPT = r"{{RESTART_SCRIPT}}"
+LLAMA_LOG_DIR = r"$env:USERPROFILE\Desktop\vllm\restart-logs"
+LLAMA_EXE_PATH = r"$env:USERPROFILE\Desktop\vllm\llama-b9222-bin-win-cuda-12.4-x64\llama-server.exe"
+LLAMA_MODEL_PATH = r"$env:USERPROFILE\Desktop\vllm\models\Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Compact.gguf"
+RESTART_SCRIPT = r"$env:USERPROFILE\Desktop\vllm\restart-llama.ps1"
 LLAMA_PORT = 8080
 
 # ========== 硬超时（防止子进程卡死不退出，导致 gateway session 锁死） ==========
@@ -64,7 +64,7 @@ def slugify(text, max_len=20):
 
 # ========== 参考音频目录 ==========
 REF_DIR = os.path.join(
-    r"{{WORKSPACE}}\qqbot\skills\tts",
+    r"$env:USERPROFILE\.openclaw\workspace\qqbot\skills\tts",
     r"ref_wavs"
 )
 
@@ -245,13 +245,17 @@ try:
         # 重启 llama-server，等它完全就绪再输出结果
         if output_wav_path:
             sys.stderr.flush()
-            start_llama(
+            ok = start_llama(
                 port=LLAMA_PORT,
                 exe_path=LLAMA_EXE_PATH,
                 model_path=LLAMA_MODEL_PATH,
                 log_dir=LLAMA_LOG_DIR,
             )
-            print(f"[LLAMA] 已就绪，继续输出结果", file=sys.stderr, flush=True)
+            if not ok:
+                print(f"[LLAMA] 启动失败(VRAM不足或超时)，语音已生成",
+                      file=sys.stderr, flush=True)
+            else:
+                print(f"[LLAMA] 已就绪，继续输出结果", file=sys.stderr, flush=True)
 
         if output_wav_path:
             sys.stdout.write(output_wav_path + '\n')
