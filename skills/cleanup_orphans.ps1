@@ -6,7 +6,7 @@
 $Now = Get-Date
 $Killed = 0
 
-Write-Host "[cleanup] start scanning for orphan processes..."
+Write-Output "[cleanup] $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') start scanning for orphan processes..."
 
 # Llama auto-restart removed — VRAM scheduling is now optimal, restart not needed
 
@@ -50,9 +50,9 @@ foreach ($Proc in $Processes) {
     }
 
     if ($Reason) {
-        Write-Host "[cleanup] found orphan PID=$Pid (age=$Age s, $Reason)" -ForegroundColor Yellow
+        Write-Output "[cleanup] found orphan PID=$Pid (age=$Age s, $Reason)" -ForegroundColor Yellow
         $cmdPreview = if ($Cmd.Length -gt 120) { $Cmd.Substring(0, 120) + "..." } else { $Cmd }
-        Write-Host "         cmd: $cmdPreview" -ForegroundColor Gray
+        Write-Output "         cmd: $cmdPreview" -ForegroundColor Gray
 
         if (-not $WhatIf) {
             try {
@@ -61,19 +61,19 @@ foreach ($Proc in $Processes) {
                 foreach ($child in $childProcs) {
                     Stop-Process -Id $child -Force -ErrorAction SilentlyContinue
                 }
-                Write-Host "        killed (including $($childProcs.Count) children)" -ForegroundColor Green
+                Write-Output "        killed (including $($childProcs.Count) children)" -ForegroundColor Green
                 $Killed++
             } catch {
-                Write-Host "        kill failed: $_" -ForegroundColor Red
+                Write-Output "        kill failed: $_" -ForegroundColor Red
             }
         }
     }
 }
 
 if ($WhatIf) {
-    Write-Host "[cleanup] DRY RUN, no processes killed"
+    Write-Output "[cleanup] DRY RUN, no processes killed"
 } else {
-    Write-Host "[cleanup] done, killed $Killed orphans"
+    Write-Output "[cleanup] done, killed $Killed orphans"
 }
 
 # Clean stale lock files
@@ -87,11 +87,11 @@ foreach ($LockFile in $LockFiles) {
         $LockContent = Get-Content $LockFile -Raw | ConvertFrom-Json -ErrorAction SilentlyContinue
         if ($LockContent.Pid -and -not (Get-Process -Id $LockContent.Pid -ErrorAction SilentlyContinue)) {
             Remove-Item $LockFile -Force
-            Write-Host "[cleanup] removed stale lock: $LockFile" -ForegroundColor Yellow
+            Write-Output "[cleanup] removed stale lock: $LockFile" -ForegroundColor Yellow
         }
     } catch {
         Remove-Item $LockFile -Force -ErrorAction SilentlyContinue
-        Write-Host "[cleanup] removed broken lock: $LockFile" -ForegroundColor Yellow
+        Write-Output "[cleanup] removed broken lock: $LockFile" -ForegroundColor Yellow
     }
 }
 
@@ -103,18 +103,17 @@ if (Test-Path $TaskFlagDir) {
         $_.CreationTime -lt $FlagCutoff
     } | ForEach-Object {
         Remove-Item $_.FullName -Force
-        Write-Host "[cleanup] removed stale task flag: $($_.Name)" -ForegroundColor Gray
+        Write-Output "[cleanup] removed stale task flag: $($_.Name)" -ForegroundColor Gray
     }
     Get-ChildItem "$TaskFlagDir\*" -ErrorAction SilentlyContinue | Where-Object {
         $_.CreationTime -lt (Get-Date).AddHours(-2)
     } | ForEach-Object {
         Remove-Item $_.FullName -Force
-        Write-Host "[cleanup] purged old flag file: $($_.Name)" -ForegroundColor DarkGray
+        Write-Output "[cleanup] purged old flag file: $($_.Name)" -ForegroundColor DarkGray
     }
 }
 
 # ---- Session registry + orphan files cleanup ----
-# 动态扫描所有 agent sessions 目录（main、qqbot、shiki/telegram 等自动覆盖）
 $AgentsRoot = "C:\Users\TK\.openclaw\agents"
 $SessionDirs = @()
 if (Test-Path $AgentsRoot) {
@@ -157,13 +156,13 @@ foreach ($AgentDir in $SessionDirs) {
                 $IsStale = $false
                 if ($IsSubagentSpawn -and (-not $SessionFilePath -or $FileMissing)) {
                     $IsStale = $true
-                    Write-Host "[gateway-cleanup] stale subagent/spawn (no file): $Key" -ForegroundColor DarkYellow
+                    Write-Output "[gateway-cleanup] stale subagent/spawn (no file): $Key" -ForegroundColor DarkYellow
                 } elseif ($FileMissing) {
                     $IsStale = $true
-                    Write-Host "[gateway-cleanup] stale session (file missing): $Key" -ForegroundColor DarkYellow
+                    Write-Output "[gateway-cleanup] stale session (file missing): $Key" -ForegroundColor DarkYellow
                 } elseif ($NoFileStale -and $OldDone) {
                     $IsStale = $true
-                    Write-Host "[gateway-cleanup] stale session (no file + done): $Key" -ForegroundColor DarkYellow
+                    Write-Output "[gateway-cleanup] stale session (no file + done): $Key" -ForegroundColor DarkYellow
                 }
 
                 if ($IsStale) {
@@ -180,12 +179,12 @@ foreach ($AgentDir in $SessionDirs) {
 
             if ($Changed) {
                 $Reg | ConvertTo-Json -Depth 10 | Set-Content $RegFile -Force
-                Write-Host "[gateway-cleanup] updated $RegFile" -ForegroundColor Green
+                Write-Output "[gateway-cleanup] updated $RegFile" -ForegroundColor Green
             } else {
-                Write-Host "[gateway-cleanup] $RegFile clean" -ForegroundColor Gray
+                Write-Output "[gateway-cleanup] $RegFile clean" -ForegroundColor Gray
             }
         } catch {
-            Write-Host "[gateway-cleanup] error processing $RegFile : $_" -ForegroundColor Red
+            Write-Output "[gateway-cleanup] error processing $RegFile : $_" -ForegroundColor Red
         }
     }
 
@@ -203,15 +202,15 @@ foreach ($AgentDir in $SessionDirs) {
                 if ($Proc -and ((Get-Date) - $Proc.StartTime).TotalMinutes -gt 30) {
                     Stop-Process -Id $LockPid -Force -ErrorAction SilentlyContinue
                     Remove-Item $LockFile -Force -ErrorAction SilentlyContinue
-                    Write-Host "[cleanup] killed zombie process PID=$LockPid and removed its lock file" -ForegroundColor Yellow
+                    Write-Output "[cleanup] killed zombie process PID=$LockPid and removed its lock file" -ForegroundColor Yellow
                 }
             } else {
                 Remove-Item $LockFile -Force -ErrorAction SilentlyContinue
-                Write-Host "[cleanup] removed stale lock file: $($_.Name)" -ForegroundColor Yellow
+                Write-Output "[cleanup] removed stale lock file: $($_.Name)" -ForegroundColor Yellow
             }
         } catch {
             Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
-            Write-Host "[cleanup] force-removed orphan lock: $($_.Name)" -ForegroundColor Gray
+            Write-Output "[cleanup] force-removed orphan lock: $($_.Name)" -ForegroundColor Gray
         }
     }
 
@@ -219,7 +218,7 @@ foreach ($AgentDir in $SessionDirs) {
     Get-ChildItem "$AgentDir\*.reset.*","$AgentDir\*.deleted.*" -ErrorAction SilentlyContinue | ForEach-Object {
         Remove-Item $_.FullName -Force
         $PurgedCount++
-        Write-Host "[cleanup] purged reset/deleted file: $($_.Name)" -ForegroundColor Gray
+        Write-Output "[cleanup] purged reset/deleted file: $($_.Name)" -ForegroundColor Gray
     }
 
     $KnownActiveIds = @()
@@ -245,7 +244,7 @@ foreach ($AgentDir in $SessionDirs) {
         $BaseId = $_.BaseName
         if ($BaseId -notin $KnownActiveIds -and $_.LastWriteTime -lt $Cutoff) {
             Remove-Item $_.FullName -Force
-            Write-Host "[cleanup] removed orphan jsonl: $($_.Name)" -ForegroundColor Gray
+            Write-Output "[cleanup] removed orphan jsonl: $($_.Name)" -ForegroundColor Gray
             Get-ChildItem "$AgentDir\$BaseId.*" -ErrorAction SilentlyContinue | Remove-Item -Force
         }
     }
@@ -256,10 +255,10 @@ foreach ($AgentDir in $SessionDirs) {
             $BaseId = ($_.Name -split '\.')[0]
             if ($BaseId -notin $KnownActiveIds) {
                 Remove-Item $_.FullName -Force
-                Write-Host "[cleanup] removed trash: $($_.Name)" -ForegroundColor Gray
+                Write-Output "[cleanup] removed trash: $($_.Name)" -ForegroundColor Gray
             }
         }
     }
 
-    if ($PurgedCount -gt 0) { Write-Host "[cleanup] purged $PurgedCount reset/deleted files" -ForegroundColor Green }
+    if ($PurgedCount -gt 0) { Write-Output "[cleanup] purged $PurgedCount reset/deleted files" -ForegroundColor Green }
 }
