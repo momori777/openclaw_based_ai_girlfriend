@@ -69,3 +69,20 @@ models:
     download: |
       huggingface-cli download TAOTAO777/ai-girlfriend-natsume gpt-sovits-weights/ --local-dir gpt-sovits-weights --include "*.ckpt" "*.pth"
     note: 自训练声优模型，需两个文件配对使用。用你自己的声优数据训练替代
+
+  # =========================================================================
+  # 本地 Embedding 模型 — 语义记忆向量化
+  # =========================================================================
+  - name: all-MiniLM-L6-v2
+    type: sentence-transformer (384-dim, ~80 MB)
+    repo: sentence-transformers/all-MiniLM-L6-v2
+    repo_path: N/A (自动下载到 HF cache)
+    local_path: ${HF_HOME:-skills/sakura/runtime/hf-cache/}
+    download: |
+      首启自动下载: python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')"
+    upstream: https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
+    license: Apache 2.0
+    note: |
+      为 OpenClaw memory_search 和 Sakura mem0 提供本地语义向量化，384 维
+      服务: skills/shared/embedding_server.py (端口 9999)
+      CPU 推理，毫秒级延迟，不占 VRAM

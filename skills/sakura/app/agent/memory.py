@@ -311,11 +311,12 @@ class MemoryStore:
             },
             "llm": llm_config,
             "embedder": {
-                "provider": "huggingface",
+                "provider": "openai",
                 "config": {
                     "model": DEFAULT_EMBEDDING_MODEL,
                     "embedding_dims": DEFAULT_EMBEDDING_DIMS,
-                    "model_kwargs": _local_embedding_model_kwargs(DEFAULT_EMBEDDING_MODEL, self.base_dir),
+                    "openai_base_url": "http://127.0.0.1:9999/v1/",
+                    "api_key": "local",
                 },
             },
             "history_db_path": str(memory_dir / "mem0_history.db"),
