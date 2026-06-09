@@ -81,8 +81,10 @@ models:
     download: |
       首启自动下载: python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')"
     upstream: https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
+    mirror: TOATAO777/ai-girlfriend-natsume/embedding/all-MiniLM-L6-v2
     license: Apache 2.0
     note: |
       为 OpenClaw memory_search 和 Sakura mem0 提供本地语义向量化，384 维
       服务: skills/shared/embedding_server.py (端口 9999)
       CPU 推理，毫秒级延迟，不占 VRAM
+      自行备份至 TAOTAO777/ai-girlfriend-natsume
