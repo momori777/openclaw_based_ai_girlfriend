@@ -8,27 +8,7 @@ $Killed = 0
 
 Write-Host "[cleanup] start scanning for orphan processes..."
 
-# ---- Llama Server health check + auto-restart ----
-$llamaRunning = Get-Process llama-server -ErrorAction SilentlyContinue
-$llamaHealthy = $false
-if ($llamaRunning) {
-    try {
-        $r = Invoke-WebRequest -Uri "http://127.0.0.1:8080/health" -UseBasicParsing -TimeoutSec 3
-        if ($r.StatusCode -eq 200) { $llamaHealthy = $true }
-    } catch { }
-}
-
-if (-not $llamaHealthy) {
-    if ($llamaRunning) {
-        Write-Host "[llama] process found but port 8080 not healthy, restarting..." -ForegroundColor Yellow
-    } else {
-        Write-Host "[llama] not running, starting..." -ForegroundColor Yellow
-    }
-    & "C:\Users\TK\Desktop\vllm\restart-llama.ps1"
-    Write-Host "[llama] restart script executed" -ForegroundColor Green
-} else {
-    Write-Host "[llama] healthy (PID=$($llamaRunning.Id))" -ForegroundColor Green
-}
+# Llama auto-restart removed — VRAM scheduling is now optimal, restart not needed
 
 # Script keywords to match orphan processes
 $ScriptPatterns = @(
