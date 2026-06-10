@@ -28,8 +28,8 @@ from app.llm.api_client import (
 from app.llm.chat_reply import ChatReply
 from app.core.debug_log import debug_log
 
-# ── 内联 llama 工具（原 llama_utils.py 编码损坏，内联避免依赖） ──
-from app.llm.llama_utils_inline import (
+# ── llama 生命周期感知工具 ──
+from app.llm.llama_utils import (
     detect_llama_unavailable,
     port_open,
     wait_for_llama_ready,
