@@ -71,6 +71,28 @@ $RECYCLE.BIN/
 live2d/node_modules/
 ren_pro_jp/node_modules/
 
+# Live2D Live2D (版权文件、大模型、运行时产物)
+# Cubism Core
+live2d/live2dcubismcore.min.js
+# 模型文件（大文件，托管HF/网盘）
+live2d/model/
+# 第三方 JS 包（从 npm 安装或 CDN 加载）
+live2d/plid-v5-bundle.js
+live2d/pixi.min.js
+live2d/pixi-proxy.js
+live2d/pixi-shim.js
+# 临时/调试/存档
+live2d/_archive/
+live2d/_scratch/
+live2d/hack/
+# 运行时生成
+live2d/node_modules/
+live2d/media/
+# 版权说明文件（不提交）
+live2d/NOTICE.md
+live2d/LICENSE.md
+live2d/RedistributableFiles.txt
+
 # Live2D 测试文件（项目根目录下的临时测试）
 /katou_*
 /test_katou*

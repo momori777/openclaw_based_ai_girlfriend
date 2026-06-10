@@ -45,6 +45,13 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+_LIVE2D_ENABLED = False
+try:
+    from PySide6.QtWebEngineWidgets import QWebEngineView
+    _LIVE2D_ENABLED = True
+except ImportError:
+    pass
+
 from app.agent import (
     AgentEvent,
     AgentProgress,
@@ -423,6 +430,24 @@ class PetWindow(QWidget):
         self.portrait_opacity_effect.setOpacity(1.0)
         self.label.setGraphicsEffect(self.portrait_opacity_effect)
 
+        # Live2D嵌入：用 QWebEngineView 替换 QLabel 区域
+        self.live2d_view: QWebEngineView | None = None
+        if _LIVE2D_ENABLED and self.character_profile.live2d and self.character_profile.live2d.enabled:
+            self.live2d_view = QWebEngineView(self)
+            bridge_url = self.character_profile.live2d.bridge_url
+            # Make WebEngine background transparent so WebGL canvas can be visible
+            self.live2d_view.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+            self.live2d_view.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
+            self.live2d_view.setStyleSheet("background: transparent;")
+            page = self.live2d_view.page()
+            if page:
+                page.setBackgroundColor(Qt.GlobalColor.transparent)
+            # Capture JS console logs for debugging
+            self.live2d_view.page().loadFinished.connect(self._on_live2d_loaded)
+            self.live2d_view.load(f"{bridge_url}/?embed=1")
+            self.label.hide()
+            debug_log("PetWindow", f"Live2D WebEngine loading: {bridge_url}/?embed=1")
+
         self.portrait_transition_label = QLabel(self)
         self.portrait_transition_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.portrait_transition_label.hide()
@@ -441,6 +466,7 @@ class PetWindow(QWidget):
             raise_foreground=self._raise_foreground_controls,
             on_portrait_changed=self._update_tray_icon_pixmap,
             portrait_scale_percent=self.portrait_scale_percent,
+            live2d_profile=self.character_profile.live2d,
             parent=self,
         )
 
@@ -507,6 +533,7 @@ class PetWindow(QWidget):
             preload_segment=self.portrait_controller.preload_for_segment,
             typing_interval_ms=self.subtitle_typing_interval_ms,
             segment_pause_ms=self.reply_segment_pause_ms,
+            on_segment_tts_done=self._on_live2d_speak_end,
         )
         self.speech_timer = self.subtitle_controller.speech_timer
         if not self.startup_initializing:
@@ -779,8 +806,72 @@ class PetWindow(QWidget):
         self._schedule_native_topmost_sync()
 
     def _apply_reply_segment(self, segment: ChatSegment) -> None:
+        # Live2D speak sync: start lip-sync on TTS
+        l2d = self.portrait_controller.live2d_client
+        if l2d and l2d.available:
+            display_text = segment.display_text(self.subtitle_language)
+            l2d.speak_start(display_text)
+            # speak_end called via _on_live2d_speak_end on segment TTS done
+
         self.portrait_controller.apply_for_segment(segment)
         self._sync_reply_history_index_for_segment(segment)
+
+    def _on_live2d_speak_end(self) -> None:
+        """Called when TTS finishes playing a segment — stop lip-sync."""
+        l2d = self.portrait_controller.live2d_client
+        if l2d and l2d.available:
+            l2d.speak_end()
+
+    def _on_live2d_loaded(self, ok: bool) -> None:
+        """Called when QWebEngineView finishes loading."""
+        if not ok:
+            debug_log("PetWindow", "Live2D WebEngine load FAILED")
+            return
+        # Inject console log → title hook + WebGL support detection
+        if self.live2d_view is not None:
+            self.live2d_view.page().runJavaScript("""
+                (function() {
+                    var _log = console.log;
+                    console.log = function() {
+                        _log.apply(console, arguments);
+                        document.title = Array.from(arguments).join(' ').substring(0, 100);
+                    };
+                    var _err = console.error;
+                    console.error = function() {
+                        _err.apply(console, arguments);
+                        document.title = 'ERR: ' + Array.from(arguments).join(' ').substring(0, 100);
+                    };
+                    // Check WebGL
+                    var c = document.createElement('canvas');
+                    var gl = c.getContext('webgl2') || c.getContext('webgl');
+                    if (!gl) {
+                        document.title = 'ERR: No WebGL support';
+                    }
+                })();
+            """)
+            # Check title after a short delay (wait for SDK init + model load)
+            QTimer.singleShot(5000, self._check_live2d_title)
+            debug_log("PetWindow", "Live2D WebEngine loadFinished (ok)")
+
+    def _check_live2d_title(self) -> None:
+        """Log the WebEngine page title for debugging."""
+        if self.live2d_view is not None:
+            self.live2d_view.page().runJavaScript(
+                "document.title",
+                lambda result: debug_log("Live2D", f"WebEngine title: {result}"),
+            )
+            # Check if WebSocket connected
+            QTimer.singleShot(2000, self._check_live2d_ws)
+
+    def _check_live2d_ws(self) -> None:
+        """Check Live2D WebSocket / API status and log it."""
+        try:
+            import urllib.request, json
+            with urllib.request.urlopen("http://localhost:19200/api/status", timeout=2) as resp:
+                data = json.loads(resp.read())
+                debug_log("Live2D", f"API status: {data}")
+        except Exception as e:
+            debug_log("Live2D", f"API status check failed: {e}")
 
     def _remember_reply_history_segments(self, segments: list[ChatSegment]) -> None:
         clean_segments = [segment for segment in segments if segment.text.strip()]
@@ -950,6 +1041,16 @@ class PetWindow(QWidget):
             (width - transition_width) // 2,
             max(0, height - transition_height - 62),
         )
+
+        # Live2D WebEngine: match label position and size
+        if self.live2d_view is not None:
+            self.live2d_view.setGeometry(
+                (width - portrait_width) // 2,
+                max(0, height - portrait_height - 62),
+                portrait_width,
+                portrait_height,
+            )
+            self.live2d_view.raise_()
 
         bubble_width = min(640, width - 96)
         bubble_height = 128

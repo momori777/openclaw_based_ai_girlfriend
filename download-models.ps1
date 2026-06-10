@@ -14,10 +14,16 @@
 
 param(
     [string]$BaseDir = ".",
-    [string]$HFRepo = "TAOTAO777/ai-girlfriend-natsume"
+    [string]$HFRepo = "TAOTAO777/ai-girlfriend-natsume",
+    [switch]$Live2DOnly = $false
 )
 
 $ErrorActionPreference = "Stop"
+
+if ($Live2DOnly) {
+    Write-Host "Live2D-only mode" -ForegroundColor Cyan
+    $Models = @()
+}
 
 Write-Host "╔══════════════════════════════════════════════════════╗" -ForegroundColor Cyan
 Write-Host "║  AI Girlfriend — 四季夏目 · Model Downloader         ║" -ForegroundColor Cyan
@@ -85,6 +91,14 @@ $Models = @(
     @{RepoPath="gpt-sovits-weights/SoVITS_weights_v2Pro/xxx_e20_s6240.pth"; LocalPath="$BaseDir\gpt-sovits-weights\SoVITS_weights_v2Pro\xxx_e20_s6240.pth"; Desc="GPT-SoVITS pth (135 MB)"}
 )
 
+# Live2D 模型单独处理（tar.gz 需要解压）
+$Live2D = @{
+    RepoPath = "live2d-model/shiki_natsume.tar.gz"
+    ArchivePath = "$BaseDir\live2d-model\shiki_natsume.tar.gz"
+    ExtractDir = "$BaseDir\live2d\model"
+    Desc = "Live2D Model — Shiki Natsume (~209 MB)"
+}
+
 $total = $Models.Count
 $current = 0
 $failed = @()
@@ -120,10 +134,50 @@ foreach ($m in $Models) {
     Write-Host ""
 }
 
+# ============================================
+# Live2D 模型下载 (tar.gz 需要解压)
+# ============================================
+$current++
+$total++
+
+$live2dMarker = Join-Path $Live2D.ExtractDir "shiki_natsume\final\shiki_natsume.model3.json"
+if (Test-Path $live2dMarker) {
+    Write-Host "[$current/$total] $($Live2D.Desc) — already exists, skipping" -ForegroundColor DarkGray
+} else {
+    Write-Host "[$current/$total] Downloading $($Live2D.Desc)..." -ForegroundColor Yellow
+    Write-Host "         From: $($Live2D.RepoPath)" -ForegroundColor Gray
+    
+    $null = New-Item -ItemType Directory -Path (Split-Path $Live2D.ArchivePath) -Force
+    $null = New-Item -ItemType Directory -Path $Live2D.ExtractDir -Force
+    
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    $output = & $hf download $HFRepo $Live2D.RepoPath --local-dir $BaseDir 2>&1
+    $exitCode = $LASTEXITCODE
+    $sw.Stop()
+    $elapsed = [math]::Round($sw.Elapsed.TotalSeconds, 1)
+    
+    if ($exitCode -eq 0) {
+        Write-Host "         Downloaded ($elapsed s)" -ForegroundColor Green
+        Write-Host "         Extracting to $($Live2D.ExtractDir)..." -ForegroundColor Gray
+        tar -xzf $Live2D.ArchivePath -C $Live2D.ExtractDir
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "         Extracted OK" -ForegroundColor Green
+        } else {
+            Write-Host "         Extract FAILED" -ForegroundColor Yellow
+            $failed += $Live2D.Desc
+        }
+    } else {
+        Write-Host "         FAILED ($elapsed s) — exit code $exitCode" -ForegroundColor Red
+        $failed += $Live2D.Desc
+    }
+}
+Write-Host ""
+
 # 汇总
 Write-Host "══════════════════════════════════════════════════════" -ForegroundColor Cyan
-$success = $total - $failed.Count
-Write-Host "Done: $success / $total models downloaded" -ForegroundColor $(if ($failed.Count -eq 0) { "Green" } else { "Yellow" })
+$finalTotal = $total
+$finalSuccess = $finalTotal - $failed.Count
+Write-Host "Done: $finalSuccess / $finalTotal items" -ForegroundColor $(if ($failed.Count -eq 0) { "Green" } else { "Yellow" })
 
 if ($failed.Count -gt 0) {
     Write-Host ""
@@ -131,7 +185,7 @@ if ($failed.Count -gt 0) {
     $failed | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
 }
 
-if ($success -eq $total) {
+if ($finalSuccess -eq $finalTotal) {
     Write-Host ""
     Write-Host "All models downloaded to:" -ForegroundColor Green
     Write-Host "  $BaseDir" -ForegroundColor Green

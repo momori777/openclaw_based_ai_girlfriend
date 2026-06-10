@@ -25,7 +25,6 @@ const NODE_MODULES = path.join(__dirname, 'node_modules');
 // Serve node_modules files at /node_modules/... path
 const NODE_MODULES_ALIASES = {
   '/pixi.min.js': 'pixi.js/dist/pixi.min.js',
-  '/pixi-live2d-display.min.js': 'pixi-live2d-display/dist/index.min.js',
 };
 
 // ========== CLIENTS ==========
@@ -47,6 +46,7 @@ const MIME = {
   '.model3.json': 'application/json',
   '.css': 'text/css; charset=utf-8',
   '.wav': 'audio/wav',
+  '.mjs': 'application/javascript; charset=utf-8',
 };
 
 // ========== Broadcast to all WebSocket clients ==========
@@ -137,6 +137,9 @@ const httpServer = http.createServer((req, res) => {
 
   // ---- Static file serving ----
   let filePath;
+
+  // Debug: log pathname for all requests
+  console.log(`📄 ${req.method} ${pathname}`);
 
   // Check node_modules aliases first
   if (NODE_MODULES_ALIASES[pathname]) {

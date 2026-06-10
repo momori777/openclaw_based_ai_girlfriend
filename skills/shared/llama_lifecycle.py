@@ -365,32 +365,35 @@ def start_llama(port=8080, exe_path=None, model_path=None,
                 break
             time.sleep(0.5)
 
-    # VRAM 自适应 — 如果自由VRAM不足，逐级降ngl
+    # VRAM 自适应 — ngl 固定 41，降 batch/ubatch 省 VRAM
     try:
         ngl = 41
+        batch_size = 4096
+        ubatch_size = 2048
         import torch
         if torch.cuda.is_available():
             torch.cuda.synchronize()
             torch.cuda.empty_cache()
             free = torch.cuda.mem_get_info()[0] / (1024 ** 2)
             if free < 7500:
-                ngl = 30
-                print(f"[LLAMA] VRAM 仅 {free:.0f} MiB，降 ngl 41→30",
+                batch_size = 2048
+                ubatch_size = 1024
+                print(f"[LLAMA] VRAM 仅 {free:.0f} MiB，降 batch 4096→2048",
                       file=sys.stderr, flush=True)
             if free < 5500:
-                ngl = 20
-                print(f"[LLAMA] VRAM 仅 {free:.0f} MiB，降 ngl→20",
+                batch_size = 1024
+                ubatch_size = 512
+                print(f"[LLAMA] VRAM 仅 {free:.0f} MiB，降 batch→1024",
                       file=sys.stderr, flush=True)
             if free < 4000:
-                ngl = 10
-                print(f"[LLAMA] VRAM 仅 {free:.0f} MiB，进一步降 ngl→10",
-                      file=sys.stderr, flush=True)
-            if free < 2500:
-                ngl = 5
-                print(f"[LLAMA] VRAM 仅 {free:.0f} MiB，降到最小 ngl→5",
+                batch_size = 512
+                ubatch_size = 256
+                print(f"[LLAMA] VRAM 仅 {free:.0f} MiB，降 batch→512",
                       file=sys.stderr, flush=True)
     except Exception:
         ngl = 41
+        batch_size = 4096
+        ubatch_size = 2048
 
     args = [
         exe_path or "llama-server.exe",
@@ -402,8 +405,8 @@ def start_llama(port=8080, exe_path=None, model_path=None,
         "-ngl", str(ngl),
         "--cpu-moe",
         "--cpu-mask", "0xFFFFFFFF",
-        "--batch-size", "4096",
-        "--ubatch-size", "2048",
+        "--batch-size", str(batch_size),
+        "--ubatch-size", str(ubatch_size),
         "--threads", "24",
         "--api-key", "123456",
         "-rea", "off",

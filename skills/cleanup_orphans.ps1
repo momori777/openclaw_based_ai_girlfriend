@@ -77,9 +77,11 @@ if ($WhatIf) {
 }
 
 # Clean stale lock files
+# Lock file paths — use environment-relative detection
+$WorkspaceRoot = if ($env:OPENCLAW_WORKSPACE) { $env:OPENCLAW_WORKSPACE } else { "$env:USERPROFILE\.openclaw\workspace" }
 $LockFiles = @(
-    "C:\Users\TK\.openclaw\workspace\comfyui_output\.comfyui_running.lock",
-    "C:\Users\TK\.openclaw\media\qqbot\audio\.tts_running.lock"
+    "$WorkspaceRoot\comfyui_output\.comfyui_running.lock",
+    "$WorkspaceRoot\media\qqbot\audio\.tts_running.lock"
 )
 foreach ($LockFile in $LockFiles) {
     if (-not (Test-Path $LockFile)) { continue }
@@ -96,7 +98,7 @@ foreach ($LockFile in $LockFiles) {
 }
 
 # ---- Task flag cleanup ----
-$TaskFlagDir = "C:\Users\TK\.openclaw\workspace\.task_flags"
+$TaskFlagDir = "$WorkspaceRoot\.task_flags"
 if (Test-Path $TaskFlagDir) {
     $FlagCutoff = (Get-Date).AddHours(-1)
     Get-ChildItem "$TaskFlagDir\*.done","$TaskFlagDir\*.meta.json" -ErrorAction SilentlyContinue | Where-Object {
@@ -114,7 +116,8 @@ if (Test-Path $TaskFlagDir) {
 }
 
 # ---- Session registry + orphan files cleanup ----
-$AgentsRoot = "C:\Users\TK\.openclaw\agents"
+$HomeRoot = if ($env:HOME) { $env:HOME } else { "$env:USERPROFILE" }
+$AgentsRoot = Join-Path $HomeRoot ".openclaw\agents"
 $SessionDirs = @()
 if (Test-Path $AgentsRoot) {
     Get-ChildItem $AgentsRoot -Directory | ForEach-Object {

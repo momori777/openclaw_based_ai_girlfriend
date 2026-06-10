@@ -2,11 +2,11 @@
 
 **100% Local · Fully Private · Zero API Dependencies**
 
-> All conversations, voice, and images are generated on your own machine. No cloud servers, no third-party APIs, no risk of data leakage. Your AI girlfriend belongs to you, and only you.
+> All conversations, voice, images, and character animations are generated on your own machine. No cloud servers, no third-party APIs, no risk of data leakage. Your AI girlfriend belongs to you, and only you.
 
 ---
 
-An AI girlfriend project powered by OpenClaw + QQ Bot + Telegram Bot + llama.cpp + GPT-SoVITS + ComfyUI + Sakura Desktop Pet — running entirely on your own machine.
+An AI girlfriend project powered by OpenClaw + QQ Bot + Telegram Bot + llama.cpp + GPT-SoVITS + ComfyUI + Sakura Desktop Pet + Live2D — running entirely on your own machine.
 
 Character: **Shiki Natsume** (四季夏目), from *Starry Moonlit Café & the Butterfly of Death*. Tall, aloof, cold exterior with a hidden warmth. Designed for *girlfriend experience* roleplay — she takes the lead.
 
@@ -23,9 +23,15 @@ Character: **Shiki Natsume** (四季夏目), from *Starry Moonlit Café & the Bu
 
 ## 🎬 Demo
 
+### Multi-Channel Chat
 ![QQ Bot Demo](media/demo_qqbot.gif)
 
-> 👆 Live QQ Bot demo: text chat + TTS voice + ComfyUI image generation + character memory
+> 👆 QQ Bot: text chat + TTS voice + ComfyUI image generation + character memory
+
+### Live2D Desktop Pet
+![Live2D Demo](media/demo_live2d.gif)
+
+> 👆 Live2D: real-time character animation with emotion-driven motions, lip-sync, and speech bubbles. Controlled via local HTTP bridge.
 
 ## Hardware
 
@@ -39,9 +45,10 @@ Character: **Shiki Natsume** (四季夏目), from *Starry Moonlit Café & the Bu
 ## Features
 
 - 💬 **QQ + Telegram Dual Channel** — QQ Bot + Telegram Bot integration via OpenClaw Gateway
-- 🎤 **TTS Voice Synthesis** — Local GPT-SoVITS inference, Japanese voice (14 reference audio clips)
+- 🎤 **TTS Voice Synthesis** — Local GPT-SoVITS inference, Japanese voice (emotion-matched per dialogue)
 - 🎨 **AI Image Generation** — Local ComfyUI inference, SDXL/Illustrious models
 - 🖥️ **Sakura Desktop Pet** — PySide6 desktop companion with proactive care, screen observation & local LLM awareness
+- 🎭 **Live2D Character Model** — Real-time Live2D rendering with 10 motion groups, emotion-driven expressions, and speech bubbles
 - 🧠 **VRAM Scheduler** — Automatic llama-server ↔ TTS/ComfyUI orchestration on 8 GB VRAM
 - 💾 **Roleplay Memory** — Conversation summaries persisted to `memory/role_play/`
 
@@ -137,8 +144,8 @@ Qwen3.6 MoE uses SSM (Gated Delta Net) hybrid attention with `--kv-unified`.
 
 ```
 AI_Girlfriend/                        # OpenClaw workspace root
-├── configure.ps1                     # 🛠 Interactive path config wizard (auto-replaces all paths)
-├── config.json                       # Generated config from configure.ps1
+├── configure.ps1                     # 🛠 Interactive path config wizard
+├── config.json                       # Generated config
 ├── download-models.ps1               # One-click model download (Windows)
 ├── download-models.sh                # One-click model download (Linux/macOS)
 ├── setup-llama.ps1                   # Auto-detect HW + configure llama.cpp (Win)
@@ -153,46 +160,67 @@ AI_Girlfriend/                        # OpenClaw workspace root
 ├── AGENTS.md                         # Agent behavior rules
 ├── SOUL.md                           # Character personality
 ├── IDENTITY.md                       # Character identity
-├── USER.md                           # User info (modify for yourself)
+├── USER.md                           # User info
 ├── HEARTBEAT.md                      # Heartbeat config
 ├── TOOLS.md                          # Tool quick reference
 ├── models.yaml                       # Model catalog + download links
 ├── README.md                         # This file
 ├── .gitignore
-├── live2d/                           # 🚧 Live2D character visualization (not yet implemented)
-├── ren_pro_jp/                       # Ren'Py dialog engine (companion to Live2D, not yet implemented)
+├── live2d/                           # Live2D character model (Cubism 4 Core)
+│   ├── index.html                    # Browser frontend (standalone window)
+│   ├── embed.html                    # Embeddable version
+│   ├── live2dcubismcore.min.js       # Cubism Core 4 (207 KB)
+│   ├── plid-v5-bundle.js             # pixi-live2d-display v0.5.0 bundle
+│   ├── live2d-bridge.mjs             # HTTP (19200) + WebSocket (19201) bridge
+│   ├── pixi.min.js, pixi-shim.js     # PIXI.js v7 rendering
+│   ├── model/shiki_natsume/          # Shiki Natsume model files
+│   ├── media/                        # Generated screenshots
+│   └── _archive/                     # Debug artifacts
+├── ren_pro_jp/                       # Ren'Py dialog engine (planned)
 ├── memory/                           # [.gitignore] Runtime memory
 │   └── role_play/                    # Roleplay conversation logs
-├── media/qqbot/                      # [.gitignore] Generated media
+├── media/                            # [.gitignore] Generated media
 │   ├── audio/                        # TTS voice output
-│   └── images/                       # ComfyUI image output
+│   ├── images/                       # ComfyUI image output
+│   └── *.gif                         # README demo GIFs
 ├── docs/
 │   ├── telegram-setup.md             # Telegram Bot setup guide
 │   └── qqbot-setup.md                # QQ Bot setup guide
 └── skills/
+    ├── live2d/                       # 🆕 Live2D control skill
+    │   ├── SKILL.md                  # Live2D API invocation guide
+    │   ├── scripts/start-live2d.ps1  # Live2D launcher
+    │   └── media/                    # Shared media output
     ├── tts/
     │   ├── SKILL.md                  # TTS invocation guide
     │   ├── run_tts.ps1               # TTS launcher script
-    │   ├── tts_call.py               # GPT-SoVITS inference (incl. llama start/stop)
-    │   └── ref_wavs/                 # Reference audio (14 wavs by emotion, prepare your own)
+    │   ├── tts_call.py               # GPT-SoVITS inference
+    │   └── ref_wavs/                 # Reference audio clips
     ├── comfyui/
     │   ├── SKILL.md                  # ComfyUI invocation guide
     │   ├── run_comfyui.ps1           # ComfyUI launcher script
-    │   ├── comfyui_call.py           # ComfyUI inference (incl. llama start/stop)
+    │   ├── comfyui_call.py           # ComfyUI inference
     │   ├── prompt_template.md        # Character prompt template
-    │   ├── custom_prompt.txt         # Custom extra prompt
-    │   ├── apron_negative.txt        # Apron scene negative prompt
-    │   └── apron_prompt.txt          # Apron scene positive prompt
+    │   └── custom_prompt.txt         # Custom extra prompt
     ├── sakura/                       # Sakura Desktop Pet (PySide6 GUI)
     │   ├── SKILL.md                  # Sakura skill documentation
     │   ├── main.py                   # Application entry point
     │   ├── install.bat               # Windows dependency installer
     │   ├── start.bat                 # Windows launcher
-    │   └── app/                      # Source code (agent, UI, LLM, voice, plugins, etc.)
+    │   └── app/                      # Source code
     ├── llama-management.md           # VRAM management architecture doc
     ├── llama-watchdog.ps1            # Llama health check
-    └── cleanup_orphans.ps1           # Orphan process/lock/session cleanup
+    └── cleanup_orphans.ps1           # Orphan process cleanup
 ```
+
+## Skills Overview
+
+| Skill | Type | Llama Kill? | Mechanism |
+|-------|------|-------------|-----------|
+| **Live2D** | HTTP exec | ❌ No | Direct HTTP calls to `localhost:19200` bridge |
+| **TTS** | sessions_spawn | ✅ Yes | Kill → GPT-SoVITS → restart llama |
+| **ComfyUI** | sessions_spawn | ✅ Yes | Kill → image gen → restart llama |
+| **Sakura** | Shared llama-client | ❌ No | Detects llama down → waits → auto-resumes |
 
 ## Prerequisites
 
@@ -204,7 +232,9 @@ AI_Girlfriend/                        # OpenClaw workspace root
 | [llama.cpp](https://github.com/ggml-org/llama.cpp) | b9222 | Local LLM inference server |
 | [GPT-SoVITS v2](https://github.com/RVC-Boss/GPT-SoVITS) | v2pro-20250604 | TTS voice synthesis |
 | [ComfyUI](https://github.com/comfyanonymous/ComfyUI) | aki-v3 | Image generation engine |
-| [Sakura Desktop Pet](https://github.com/Rvosy/Sakura) | v0.9.6-dev | Desktop companion GUI (authorized by @Rvosy, Issue #38) |
+| [Sakura Desktop Pet](https://github.com/Rvosy/Sakura) | v0.9.6-dev | Desktop companion GUI |
+| [pixi-live2d-display](https://github.com/guansss/pixi-live2d-display) | v0.5.0 | Live2D WebGL renderer |
+| Live2D Cubism Core | 4.x (CDN: cubism.live2d.com/sdk-web/cubismcore/) | Live2D physics/animation |
 | Python | 3.12+ | Runtime (Sakura + TTS + ComfyUI) |
 
 ## Quick Start
@@ -229,11 +259,11 @@ Automated pipeline: environment check → model download → llama.cpp setup →
 
 ---
 
-### Step-by-Step (if you prefer manual control)
+### Step-by-Step
 
 ### 0. Setup OpenClaw
 
-Install OpenClaw Gateway and deploy the AI Girlfriend workspace with one command:
+Install OpenClaw Gateway and deploy the AI Girlfriend workspace:
 
 **Windows:**
 ```powershell
@@ -245,188 +275,103 @@ powershell -File setup-openclaw.ps1
 bash setup-openclaw.sh
 ```
 
-This script will:
-- Install Node.js (if needed)
-- Install OpenClaw Gateway via the official install script
-- Deploy all workspace files (AGENTS.md, SOUL.md, skills, etc.) to your OpenClaw workspace
-- Install the Gateway daemon for auto-start
-- Apply the config patch for local LLM context window
+This script installs Node.js, OpenClaw Gateway, deploys workspace files, installs daemon, and applies config patch.
 
 > **Flags:** `--skip-node`, `--skip-deploy`, `--skip-daemon`, `--no-onboard`
 
 ### 1. Download Models
 
-Use the provided one-click script:
-
 **Windows:**
 ```powershell
-# Install deps
 pip install huggingface_hub
-huggingface-cli login  # first time only
-
-# Run the downloader
+huggingface-cli login
 powershell -File download-models.ps1
-
-# Or specify a target directory
-powershell -File download-models.ps1 -BaseDir "D:\models"
 ```
 
 **Linux / macOS:**
 ```bash
 pip install huggingface_hub
-huggingface-cli login  # first time only
-
+huggingface-cli login
 bash download-models.sh
-# or: bash download-models.sh /path/to/models
 ```
 
-The script downloads all 5 model files (~29 GB) from HuggingFace, skips existing files, and reports progress.
-
-See [`models.yaml`](models.yaml) for full model details and manual download commands.
+Downloads all 5 model files (~29 GB) from HuggingFace with progress reporting and resume support.
 
 ### 2. Setup llama.cpp
 
-Auto-detect your hardware and generate an optimized llama-server config:
+Auto-detects GPU, VRAM, CPU cores, RAM and generates optimized launch configs.
 
 **Windows:**
 ```powershell
-# Basic: detect hardware, generate config
 powershell -File setup-llama.ps1
-
-# With auto-build (clone + compile llama.cpp from source)
-powershell -File setup-llama.ps1 -BuildLlama
-
-# Custom model path
-powershell -File setup-llama.ps1 -ModelPath "D:\my-models\custom.gguf"
 ```
 
 **Linux / macOS:**
 ```bash
-# Basic
 bash setup-llama.sh
-
-# With auto-build
-bash setup-llama.sh --build
-
-# Custom model
-bash setup-llama.sh --model /path/to/custom.gguf
 ```
 
-The script auto-detects:
-- **GPU** — NVIDIA (nvidia-smi), AMD (rocminfo), Apple Silicon (Metal), or fallback
-- **VRAM** — determines GPU offload layers, batch sizes, KV cache budget
-- **CPU cores** — configures thread count and batch size
-- **RAM** — checks if --no-mmap is safe (requires 32+ GB)
+### 3. Configure Paths
 
-Output in `llama-config/`:
-- `launch-llama.ps1` / `launch-llama.sh` — Start the server
-- `llama-watchdog.ps1` / `llama-watchdog.sh` — Health check for Task Scheduler / cron
-- `hardware-report.md` — Your machine's detected specs
-- Plus systemd service (Linux) or launchd plist (macOS) for auto-start
-
-### 3. Configure Paths ⚡ Interactive wizard recommended
-
-**Replace all paths in one go:**
-
-`powershell
+```powershell
 powershell -File configure.ps1
-`
+```
 
-The interactive configuration wizard asks for your local paths, then auto-replaces all absolute paths in every script.
-Supports the \-DryRun\ flag to preview changes without writing.
+Interactive wizard — enter your local paths once, all scripts are updated automatically.
 
-> Config is saved to \config.json\ and loaded automatically on the next run.
+### 4. Start Live2D
 
----
+```powershell
+# Start the bridge
+Start-Process node -ArgumentList "live2d-bridge.mjs" -WorkingDirectory live2d -WindowStyle Hidden
 
-<details>
-<summary>📝 Manual config (click to expand)</summary>
+# Open in standalone window (Chrome app mode)
+Start-Process chrome -ArgumentList "--new-window --app=http://localhost:19200/index.html --window-size=450,650"
+```
 
-All absolute paths in the following files must be updated to match your environment:
-
-| File | Key Variables |
-|------|--------------|
-| \skills/tts/tts_call.py\ | \WEBUI_DIR\, \OUTPUT_DIR\, \LLAMA_EXE_PATH\, \LLAMA_MODEL_PATH\, \RESTART_SCRIPT\ |
-| \skills/tts/run_tts.ps1\ | \\, \\, \\, \\ |
-| \skills/comfyui/comfyui_call.py\ | \COMFYUI_ROOT\, \PYTHON_PATH\, \CHECKPOINTS_DIR\, \OUTPUT_DIR\, \LLAMA_*\ |
-| \skills/comfyui/run_comfyui.ps1\ | \\, \\, \\, \\ |
-| \skills/llama-watchdog.ps1\ | llama-server path, restart script path |
-| \skills/cleanup_orphans.ps1\ | Project directory, task_flags directory |
-
-</details>
-
-### 4. Deploy to OpenClaw
-
-If you haven't already run `setup-openclaw.ps1`/`setup-openclaw.sh`, you can manually use `AI_Girlfriend/` as your OpenClaw workspace. Configure the qqbot channel to point to this directory.
+Live2D runs in a frameless Chrome window — place it anywhere on your desktop.
 
 ### 5. Windows Task Scheduler
 
 ```powershell
 # Llama health check (every 10 min)
 schtasks /create /tn "llama-watchdog" `
-  /tr "powershell -File C:\Users\<you>\.openclaw\workspace\qqbot\skills\llama-watchdog.ps1" `
+  /tr "powershell -File C:\Users\<you>\.openclaw\workspace\skills\llama-watchdog.ps1" `
   /sc minute /mo 10
 
 # Orphan process cleanup (hourly)
-schtasks /create /tn "cleanup-qqbot-orphans" `
-  /tr "powershell -File C:\Users\<you>\.openclaw\workspace\qqbot\skills\cleanup_orphans.ps1" `
+schtasks /create /tn "cleanup-orphans" `
+  /tr "powershell -File C:\Users\<you>\.openclaw\workspace\skills\cleanup_orphans.ps1" `
   /sc hourly /mo 1
 ```
-
-### 6. Apply Config Patch
-
-Apply `config-patch.json` via OpenClaw: `gateway config.patch.apply`.
-
-## QQ Bot Setup
-
-See [`docs/qqbot-setup.md`](docs/qqbot-setup.md).
-
-Quick setup:
-
-1. Go to [QQ Open Platform](https://q.qq.com/) to create a private-domain bot. Get your **AppID** + **ClientSecret**
-2. Edit `config-qqbot.json`, replacing `<YOUR_QQ_APP_ID>` and `<YOUR_QQ_CLIENT_SECRET>`
-3. Apply config: `openclaw gateway call config.patch.apply --json --params (Get-Content config-qqbot.json -Raw)`
-4. QQ Bot channel supports hot-reload — no restart needed
-
-## Telegram Setup
-
-See [`docs/telegram-setup.md`](docs/telegram-setup.md).
-
-Quick setup:
-
-1. Create a bot via [@BotFather](https://t.me/BotFather) and get the Token
-2. Edit `config-telegram.json`, replacing `<YOUR_BOT_TOKEN>`
-3. Apply config: `openclaw gateway call config.patch.apply --json --params (Get-Content config-telegram.json -Raw)`
-4. Restart: `openclaw gateway restart`
-
-Inspired by the Telegram integration design from [arlanrakh/talk-to-girlfriend-ai](https://github.com/arlanrakh/talk-to-girlfriend-ai).
 
 ## Architecture
 
 ```
-User (QQ / Telegram) ──────── Sakura Desktop Pet (PySide6, optional)
+User (QQ / Telegram) ────── Sakura Desktop Pet (PySide6)
   │                                    │
   ▼                                    ▼
-OpenClaw Gateway              LocalLlamaClient
-  │                               (lifecycle-aware)
-  ▼                                    │
-  ┌───── llama-server :8080 (Qwen3.6-35B) ─────┐
-  │         All skills share one brain           │
-  ├──────────────────────────────────────────────┤
-  │                                              │
-  ├── Main session (roleplay, QQ + Telegram)     │
-  ├── TTS (kill llama → GPU inference → restart) │
-  ├── ComfyUI (kill llama → GPU inference → restart)
-  └── Sakura (detect down → wait → auto-resume)  │
+OpenClaw Gateway              Live2D Bridge (:19200)
+  │                               ▲       │
+  ▼                               │       ▼
+  ┌───── llama-server :8080 ──────┘   Browser (Live2D model)
+  │         (Qwen3.6-35B)             │
+  ├───────────────────────────────────┤
+  │  Main session (roleplay)          │
+  │  TTS (kill → GPU → restart)       │
+  │  ComfyUI (kill → GPU → restart)   │
+  │  Live2D (HTTP → no kill needed)   │
+  └───────────────────────────────────┘
 ```
 
-**Three Skills, One Brain**:
+**Four Skills, One Brain**:
 
 | Skill | Location | Llama Interaction |
 |-------|----------|-------------------|
-| **TTS** | `skills/tts/` | Kill llama → GPT-SoVITS inference → restart llama + wait for `/health` → `/completion` |
-| **ComfyUI** | `skills/comfyui/` | Kill llama → image generation → restart llama + wait for `/health` → `/completion` |
-| **Sakura** | `skills/sakura/` | Send requests to llama; detect down → poll `/health` + `/completion` → auto-resume (never kills llama itself) |
+| **Live2D** | `skills/live2d/` | HTTP API only — never touches llama |
+| **TTS** | `skills/tts/` | Kill llama → GPT-SoVITS → restart + wait /health |
+| **ComfyUI** | `skills/comfyui/` | Kill llama → image gen → restart + wait /health |
+| **Sakura** | `skills/sakura/` | Shared llama-client; detects down → auto-resume |
 
 **VRAM Orchestration Flow**:
 1. Main session receives user request → assembles command
@@ -434,18 +379,21 @@ OpenClaw Gateway              LocalLlamaClient
 3. Sub-session execs PS script → `stop_llama()` kills llama-server
 4. Full 8 GB VRAM freed → TTS/ComfyUI inference
 5. `start_llama()` restarts llama-server (~12s load + ~3s warmup)
-6. Sub-session writes `.task_flags` → announces back to main session
-7. Main session reads media files → sends via `<qqmedia>` (QQ) + `MEDIA:` (Telegram) to user
+6. Live2D remains active during entire cycle — bridge doesn't touch GPU
+7. Sub-session writes `.task_flags` → announces back to main session
+8. Main session reads media files → sends via `<qqmedia>` / `MEDIA:`
 
 ## ⚠️ Important Notes
 
-- Llama-server is offline for ~60–120s during TTS/ComfyUI inference — conversation pauses
-- Sub-sessions use **local model** (same as main), with DeepSeek as optional fallback — fully offline capable, zero network dependency
-- Llama-server does not support cross-turn prompt cache reuse (SSM architecture limitation) — use periodic `/reset`
-- All model files protected by `.gitignore`, not committed to git
-- GPT-SoVITS weights are self-trained and not distributed here — train with your own voice data
-- **Sakura Desktop Pet** shares the same llama-server via `LocalLlamaClient` — waits silently when llama is killed by TTS/ComfyUI, resumes automatically when ready
+- Llama-server is offline for ~60–120s during TTS/ComfyUI inference — conversation pauses, but Live2D keeps running
+- Sub-sessions use **local model** (same as main), DeepSeek as optional fallback
+- Llama-server does not support cross-turn prompt cache reuse (SSM limitation) — use periodic `/reset`
+- **Live2D requires Cubism Core 4** (not 5 or 6) — pixi-live2d-display v0.5.0 is built for Cubism 4 Framework; Core 5+ causes clipping/layer failures
+- All model files protected by `.gitignore`
+- GPT-SoVITS weights are self-trained and not distributed — train with your own voice data
 
 ## 🙏 Credits
 
 - [@Rvosy](https://github.com/Rvosy) — Creator of [Sakura Desktop Pet](https://github.com/Rvosy/Sakura), authorized for inclusion (Issue #38)
+- [@guansss](https://github.com/guansss) — Creator of [pixi-live2d-display](https://github.com/guansss/pixi-live2d-display)
+- [Live2D Inc.](https://www.live2d.com) — Cubism SDK (non-commercial use)

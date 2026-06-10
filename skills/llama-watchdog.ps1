@@ -47,6 +47,6 @@ if ($healthy) {
 Write-WatchdogLog "process alive but port dead, restarting..."
 Stop-Process -Id $llamaProc.Id -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 2
-& "C:\Users\TK\Desktop\vllm\restart-llama.ps1"
+if ($restartScript) { & $restartScript } else { Write-WatchdogLog "no restart script configured" }
 Write-WatchdogLog "done"
 exit 0

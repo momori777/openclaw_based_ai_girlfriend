@@ -1,22 +1,14 @@
 <#
 .SYNOPSIS
-  降级重启 llama-server — 逐级降低 ngl 直到启动成功
+  降级重启 llama-server — ngl 固定 41，逐级降低 batch_size/ubatch_size
   用于 VRAM 不足时手动恢复
-
-.DESCRIPTION
-  从 ngl=41 开始尝试，失败则降到 30、20、15，全部失败则用 CPU-only。
-  每次尝试会先 kill 所有 llama-server 残存进程。
-  最后输出实际生效的 ngl 值。
-
-.PARAMETER ForceNG
-  强制使用指定的 ngl 值，跳过逐级尝试
 
 .EXAMPLE
   .\restart_llama_degraded.ps1
-  .\restart_llama_degraded.ps1 -ForceNG 20
+  .\restart_llama_degraded.ps1 -ForceBatch 1024
 #>
 param(
-  [int]$ForceNG = -1
+  [int]$ForceBatch = -1
 )
 
 $ErrorActionPreference = 'Stop'
@@ -70,8 +62,7 @@ function Test-LlamaReady($timeoutSeconds = 120) {
   $sw = [Diagnostics.Stopwatch]::StartNew()
   while ($sw.Elapsed.TotalSeconds -lt $timeoutSeconds) {
     try {
-      $r = Invoke-WebRequest -Uri "http://127.0.0.1:${port}/health" `
-           -UseBasicParsing -TimeoutSec 5 -ErrorAction SilentlyContinue
+      $r = Invoke-WebRequest -Uri "http://127.0.0.1:${port}/health" -UseBasicParsing -TimeoutSec 5 -ErrorAction SilentlyContinue
       if ($r.StatusCode -eq 200) {
         $elapsed = [math]::Round($sw.Elapsed.TotalSeconds, 1)
         Write-Host "[OK] llama ready after ${elapsed}s" -ForegroundColor Green
@@ -86,7 +77,7 @@ function Test-LlamaReady($timeoutSeconds = 120) {
 }
 
 # ========== 主流程 ==========
-Write-Host "=== Llama Degraded Restart ===" -ForegroundColor Cyan
+Write-Host "=== Llama Degraded Restart (ngl=41, batch downscaling) ===" -ForegroundColor Cyan
 Write-Host "Exe:   $exe"
 Write-Host "Model: $model"
 Write-Host "Port:  $port"
@@ -96,39 +87,50 @@ Write-Host ""
 Write-Host "Cleaning up existing processes..." -ForegroundColor Yellow
 Kill-AllLlama
 
-# 确定 ngl 值
-$nglTries = @()
-if ($ForceNG -ge 0) {
-  $nglTries = @($ForceNG)
-  Write-Host "Using forced ngl=$ForceNG"
-} else {
-  $nglTries = @(41, 30, 20, 10, 5, 0)
+# 降级表：三个并行数组
+$batchSizes    = @(4096, 2048, 1024, 512)
+$ubatchSizes   = @(2048, 1024, 512,  256)
+$batchLabels   = @('4096/2048', '2048/1024', '1024/512', '512/256')
+$startIdx      = 0
+
+if ($ForceBatch -gt 0) {
+  $found = $false
+  for ($i = 0; $i -lt $batchSizes.Count; $i++) {
+    if ($batchSizes[$i] -eq $ForceBatch) {
+      $startIdx = $i
+      $found = $true
+      Write-Host "Using forced batch=$ForceBatch"
+      break
+    }
+  }
+  if (-not $found) {
+    Write-Host "Invalid batch size $ForceBatch, using full table" -ForegroundColor Yellow
+  }
 }
 
-# 逐级尝试
 $started = $false
-$finalNgl = -1
-foreach ($ngl in $nglTries) {
-  Kill-AllLlama
+$finalBatch = 0
+$finalUbatch = 0
 
-  if ($ngl -eq 0) {
-    Write-Host "Trying CPU-only (ngl=0)..." -ForegroundColor Yellow
-  } else {
-    Write-Host "Trying ngl=$ngl..." -ForegroundColor Yellow
-  }
+for ($i = $startIdx; $i -lt $batchSizes.Count; $i++) {
+  Kill-AllLlama
+  $bs = $batchSizes[$i]
+  $us = $ubatchSizes[$i]
+  $lb = $batchLabels[$i]
+  Write-Host "Trying batch=$lb..." -ForegroundColor Yellow
 
   $logFile = if ($logDir) { Join-Path $logDir "llama_degraded_$(Get-Date -Format 'yyyyMMddHHmm').log" } else { $null }
 
-  $args = @(
+  $llaArgs = @(
     '-m', $model,
     '-c', '120000',
     '--flash-attn', 'on',
     '-ctk', 'q8_0',
     '-ctv', 'q8_0',
-    '-ngl', $ngl,
+    '-ngl', '41',
     '--cpu-moe',
-    '--batch-size', '4096',
-    '--ubatch-size', '2048',
+    '--batch-size', "$bs",
+    '--ubatch-size', "$us",
     '--threads', '24',
     '--api-key', '123456',
     '-rea', 'off',
@@ -141,21 +143,22 @@ foreach ($ngl in $nglTries) {
     '--port', $port
   )
 
-  $proc = Start-Process -FilePath $exe -ArgumentList $args -NoNewWindow -PassThru
+  $proc = Start-Process -FilePath $exe -ArgumentList $llaArgs -NoNewWindow -PassThru
 
   if (Test-LlamaReady -timeoutSeconds 120) {
     $started = $true
-    $finalNgl = $ngl
+    $finalBatch = $bs
+    $finalUbatch = $us
     break
   } else {
     Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
-    Write-Host "ngl=$ngl failed, trying next level..." -ForegroundColor DarkYellow
+    Write-Host "batch=$lb failed, trying next level..." -ForegroundColor DarkYellow
   }
 }
 
 if ($started) {
   Write-Host ""
-  Write-Host "=== SUCCESS: ngl=$finalNgl, port=$port ===" -ForegroundColor Green
+  Write-Host "=== SUCCESS: ngl=41, batch=$finalBatch/$finalUbatch, port=$port ===" -ForegroundColor Green
   # 重启 watchdog
   $watchdog = Join-Path (Split-Path -Parent $scriptRoot) 'llama-watchdog.ps1'
   if (Test-Path $watchdog) {
@@ -165,7 +168,7 @@ if ($started) {
   exit 0
 } else {
   Write-Host ""
-  Write-Host "=== FAILED: all ngl levels exhausted ===" -ForegroundColor Red
+  Write-Host "=== FAILED: all batch levels exhausted ===" -ForegroundColor Red
   Write-Host "Try rebooting or checking GPU status."
   exit 1
 }

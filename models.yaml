@@ -88,3 +88,20 @@ models:
       服务: skills/shared/embedding_server.py (端口 9999)
       CPU 推理，毫秒级延迟，不占 VRAM
       自行备份至 TAOTAO777/ai-girlfriend-natsume
+
+  # =========================================================================
+  # Live2D 角色模型 — 四季夏目 (Shiki Natsume)
+  # =========================================================================
+  - name: shiki-natsume-live2d
+    type: Live2D Model (Cubism 3, ~209 MB)
+    repo: TAOTAO777/ai-girlfriend-natsume
+    repo_path: live2d-model/shiki_natsume.tar.gz
+    local_path: ${PROJECT_ROOT:-live2d/}/model/shiki_natsume/
+    download: |
+      huggingface-cli download TAOTAO777/ai-girlfriend-natsume live2d-model/shiki_natsume.tar.gz --local-dir live2d-model
+      tar -xzf live2d-model/shiki_natsume.tar.gz -C live2d/model/
+    note: |
+      四季夏目 Live2D 角色模型 (Cubism 3 moc3 + 14 textures + 41 motions)
+      解压到 live2d/model/shiki_natsume/
+      网盘备用: (待上传)
+      不提交到 GitHub (见 .gitignore)

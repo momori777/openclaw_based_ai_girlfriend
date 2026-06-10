@@ -15,7 +15,9 @@
     "@pixi/display": "^7.4.2",
     "@pixi/math": "^7.4.2",
     "@pixi/utils": "^7.4.2",
+    "flatbuffers": "^25.9.23",
     "pixi-live2d-display": "^0.5.0-beta",
+    "pixi-live2d-display-lipsyncpatch": "^0.5.0-ls-8",
     "pixi.js": "^7.4.2",
     "ws": "^8.21.0"
   },

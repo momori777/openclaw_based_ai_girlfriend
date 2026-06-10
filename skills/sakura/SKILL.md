@@ -26,7 +26,7 @@ UI 同步驱动字幕、表情和语音。
 ## 项目结构
 
 ```
-D:\AI_Girlfriend\skills\sakura\
+{{PROJECT_ROOT}}/skills/sakura/
 ├── main.py                    # 应用入口（QApplication + 启动流程）
 ├── install.bat                # Windows 依赖安装脚本
 ├── start.bat                  # Windows 一键启动脚本
@@ -284,7 +284,7 @@ llm:
 
 ## 配置说明
 
-所有配置在 `D:\AI_Girlfriend\skills\sakura\data\config\` 下：
+所有配置在 `{{PROJECT_ROOT}}/skills/sakura/data/config/` 下：
 
 ### api.yaml
 ```yaml
@@ -323,9 +323,9 @@ Sakura 是 AI_Girlfriend 项目的三个核心 skill 之一：
 
 | Skill | 位置 | 功能 |
 |-------|------|------|
-| **comfyui** | `D:\AI_Girlfriend\skills\comfyui\` | 文生图（WAII 模型 + ComfyUI API） |
-| **tts** | `D:\AI_Girlfriend\skills\tts\` | 语音合成（GPT-SoVITS + 14种情绪参考音频） |
-| **sakura** | `D:\AI_Girlfriend\skills\sakura\` | 桌宠 Agent 框架（完整 AI 女友客户端） |
+| **comfyui** | `{{PROJECT_ROOT}}/skills/comfyui/` | 文生图（WAII 模型 + ComfyUI API） |
+| **tts** | `{{PROJECT_ROOT}}/skills/tts/` | 语音合成（GPT-SoVITS + 14种情绪参考音频） |
+| **sakura** | `{{PROJECT_ROOT}}/skills/sakura/` | 桌宠 Agent 框架（完整 AI 女友客户端） |
 
 Sakura 提供了一个完整的 GUI 桌面宠物体验，集成了 LLM 对话、TTS 语音、屏幕观察、长期记忆等功能。AI_Girlfriend 项目可以：
 1. 直接使用 Sakura 作为 AI 女友的桌面客户端
@@ -337,7 +337,7 @@ Sakura 提供了一个完整的 GUI 桌面宠物体验，集成了 LLM 对话、
 
 ```powershell
 # 1. 安装依赖
-cd D:\AI_Girlfriend\skills\sakura
+cd {{PROJECT_ROOT}}/skills/sakura
 .\install.bat
 
 # 2. 编辑 API 配置
@@ -349,12 +349,12 @@ notepad data\config\api.yaml
 
 ## 注意事项
 
-1. **路径要求：** PySide6 不支持非 ASCII 路径。Sakura 当前路径 `D:\AI_Girlfriend\skills\sakura` 符合要求（全英文）。
+1. **路径要求：** PySide6 不支持非 ASCII 路径。Sakura 路径 `{{PROJECT_ROOT}}/skills/sakura` 需全英文。
 2. **Python 环境：** `start.bat` 会优先使用 `runtime\python.exe`，不存在时使用系统 Python。Release 完整包自带 `runtime/`。
 3. **模型要求：** 必须使用多模态模型（如 Gemini Flash）。DeepSeek 系列不支持视觉，会导致屏幕观察等功能失效。
 4. **HF 缓存：** `start.bat` 设置 `HF_HOME` 和 `SENTENCE_TRANSFORMERS_HOME` 到 `runtime/hf-cache/`，避免重复下载嵌入模型。
 5. **角色包：** 需要从 GitHub Releases 或百度网盘下载角色包（含立绘和声线权重），通过设置页导入。
-6. **Git 子模块：** 本项目是 `sakura` 源码的完整克隆（非 git submodule），放在 `D:\AI_Girlfriend\skills\sakura\` 下。
+6. **Git 子模块：** 本项目是 `sakura` 源码的完整克隆（非 git submodule），放在 `{{PROJECT_ROOT}}/skills/sakura/` 下。
 7. **授权状态：** 作者 Rvosy 已在 Issue #38 中同意引用（"可以的，这段时间太忙没时间加开源协议，之后会给项目加一个相对宽松一点的开源协议"）。
 
 ## 致谢

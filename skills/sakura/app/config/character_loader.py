@@ -25,6 +25,15 @@ class CharacterConfigError(RuntimeError):
 
 
 @dataclass(frozen=True)
+class Live2DProfile:
+    enabled: bool = False
+    bridge_url: str = "http://localhost:19200"
+    model_name: str = ""
+    tone_motion_map: dict[str, str] = field(default_factory=dict)
+    speak_sync: bool = True
+
+
+@dataclass(frozen=True)
 class CharacterVoice:
     gpt_model_path: Path | None
     sovits_model_path: Path | None
@@ -42,6 +51,7 @@ class CharacterProfile:
     initial_message: str
     default_portrait_path: Path
     expression_portraits: dict[str, Path] = field(default_factory=dict)
+    live2d: Live2DProfile | None = None
     voice: CharacterVoice | None = None
     reply_tones: list[str] = field(default_factory=lambda: [*DEFAULT_TONES])
     theme_settings: ThemeSettings | None = None
@@ -144,6 +154,7 @@ def _load_profile(manifest_path: Path) -> CharacterProfile:
 
     reply_data = raw_data.get("reply")
     reply_tones = _load_reply_tones(reply_data)
+    live2d = _load_live2d(package_dir, raw_data.get("live2d"), manifest_path)
     voice = _load_voice(package_dir, raw_data.get("voice"), manifest_path)
     theme_settings, theme_source, _missing_theme = character_theme_from_mapping(raw_data.get("theme"))
 
@@ -155,6 +166,7 @@ def _load_profile(manifest_path: Path) -> CharacterProfile:
         initial_message=initial_message,
         default_portrait_path=default_portrait,
         expression_portraits=expression_portraits,
+        live2d=live2d,
         voice=voice,
         reply_tones=reply_tones,
         theme_settings=theme_settings,
@@ -326,3 +338,54 @@ def _resolve_package_path(package_dir: Path, path_text: str) -> Path:
 
 def _append_desktop_context(content: str) -> str:
     return with_desktop_pet_context(content)
+
+
+def _load_live2d(
+    package_dir: Path,
+    live2d_data: Any,
+    manifest_path: Path,
+) -> Live2DProfile | None:
+    if live2d_data is None:
+        return None
+    if not isinstance(live2d_data, dict):
+        raise CharacterConfigError(f"live2d 必须是对象：{manifest_path}")
+
+    enabled = bool(live2d_data.get("enabled", False))
+    if not enabled:
+        return Live2DProfile()
+
+    bridge_url = _optional_text(live2d_data, "bridge_url", "http://localhost:19200")
+    model_name = _optional_text(live2d_data, "model_name", "shiki_natsume")
+    speak_sync = bool(live2d_data.get("speak_sync", True))
+
+    tone_map = _load_tone_motion_map(live2d_data.get("tone_motion_map"))
+
+    return Live2DProfile(
+        enabled=True,
+        bridge_url=bridge_url,
+        model_name=model_name,
+        tone_motion_map=tone_map,
+        speak_sync=speak_sync,
+    )
+
+
+def _load_tone_motion_map(data: Any) -> dict[str, str]:
+    """Parse tone → motion group mapping, with sensible defaults."""
+    default_map = {
+        "中性": "Idle",
+        "害羞": "Tap摸头",
+        "温柔": "Tap摸手",
+        "不满": "Tap外框",
+        "傲娇": "Tap外框",
+        "困惑": "Tap摸头",
+        "惊讶": "Tap外框",
+        "请求": "Tap摸手",
+    }
+    if not isinstance(data, dict):
+        return default_map
+    # Merge user overrides onto defaults
+    result = {**default_map}
+    for tone, motion in data.items():
+        if isinstance(tone, str) and isinstance(motion, str) and tone.strip():
+            result[tone.strip()] = motion.strip()
+    return result

@@ -28,13 +28,8 @@ from app.llm.api_client import (
 from app.llm.chat_reply import ChatReply
 from app.core.debug_log import debug_log
 
-# ── 导入共享 llama 工具（消除代码重复） ────────────────────
-import sys as _sys
-import os as _os
-_skill_dir = _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))))
-if _skill_dir not in _sys.path:
-    _sys.path.insert(0, _skill_dir)
-from skills.shared.llama_utils import (
+# ── 内联 llama 工具（原 llama_utils.py 编码损坏，内联避免依赖） ──
+from app.llm.llama_utils_inline import (
     detect_llama_unavailable,
     port_open,
     wait_for_llama_ready,

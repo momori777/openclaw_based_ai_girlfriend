@@ -38,6 +38,7 @@ class SubtitleController(QObject):
         preload_segment: SegmentCallback | None = None,
         typing_interval_ms: int = SPEECH_TYPING_INTERVAL_MS,
         segment_pause_ms: int = REPLY_SEGMENT_PAUSE_MS,
+        on_segment_tts_done: Callable[[], None] | None = None,
     ) -> None:
         super().__init__(parent)
         self.speech_label = speech_label
@@ -48,6 +49,7 @@ class SubtitleController(QObject):
         self._on_reply_completed = on_reply_completed
         self._should_complete_reply = should_complete_reply
         self._preload_segment = preload_segment
+        self._on_segment_tts_done = on_segment_tts_done
 
         self.speech_text = ""
         self.speech_index = 0
@@ -261,6 +263,8 @@ class SubtitleController(QObject):
             return
         self.current_segment_tts_done = True
         self._log_stage("segment_tts_done", {"sequence_id": sequence_id})
+        if self._on_segment_tts_done:
+            self._on_segment_tts_done()
         self._end_interaction_if_reply_done()
         self._schedule_next_reply_segment_if_ready(sequence_id)
 
