@@ -42,21 +42,29 @@ mkdir $mediaDir -Force -ErrorAction SilentlyContinue | Out-Null
 
 # Run ComfyUI - stderr has [LOCK]/[LLAMA] logs, stdout has the image path
 $rawOutput = & $comfyuiPython $comfyuiScript $positive $negative $seed $width $height $steps $cfg $checkpoint 2>$null
-# Extract the path from stdout (may have tqdm mixed in)
-$imgPath = ($rawOutput | Where-Object { $_ -match '\.png' } | Select-Object -Last 1) -replace '^\s+|\s+$',''
+# Extract the path from stdout — match absolute Windows paths only
+$imgPath = ($rawOutput | Where-Object { $_ -match '^[A-Za-z]:\\' -and $_ -match '\.png$' } | Select-Object -Last 1) -replace '^\s+|\s+$',''
 
-$exitOk = ($LASTEXITCODE -eq 0) -or ($rawOutput -match '\.png')
-if ($exitOk -and $imgPath -and (Test-Path $imgPath)) {
+# Fallback: if extraction failed but Python exited ok, find newest png in media dir
+if ((-not $imgPath) -and ($LASTEXITCODE -eq 0)) {
+    $fallback = Get-ChildItem $mediaDir -Filter '*.png' -File | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if ($fallback) {
+        $imgAge = [int]((Get-Date) - $fallback.LastWriteTime).TotalSeconds
+        if ($imgAge -lt 300) {
+            $imgPath = $fallback.FullName
+        }
+    }
+}
+
+if ($imgPath -and (Test-Path $imgPath)) {
     $mediaFile = Join-Path $mediaDir ('comfyui_' + (Get-Date -Format 'yyyyMMddHHmmss') + '.png')
     Copy-Item $imgPath $mediaFile -Force -ErrorAction Stop
     @{status='ok';file=$mediaFile;type='comfyui'} | ConvertTo-Json -Compress | Set-Content $flagFile
 
-    # Python script internally does start_llama + 3-stage check
-    # No need to re-verify here — just confirm quickly and output
     Write-Output "DONE: $mediaFile"
     Write-Output "<qqmedia>$mediaFile</qqmedia>"
 } else {
-    Write-Output "FAILED: exit=$LASTEXITCODE path=$imgPath"
+    Write-Output "FAILED: exit=$LASTEXITCODE imgPath=[$imgPath] rawLines=$($rawOutput.Count)"
 
     # ComfyUI failed, ensure llama is restarted
     Write-Output 'Restarting llama after failed ComfyUI run...'
