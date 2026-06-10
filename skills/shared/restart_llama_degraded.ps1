@@ -102,7 +102,7 @@ if ($ForceNG -ge 0) {
   $nglTries = @($ForceNG)
   Write-Host "Using forced ngl=$ForceNG"
 } else {
-  $nglTries = @(41, 30, 20, 15, 0)
+  $nglTries = @(41, 30, 20, 10, 5, 0)
 }
 
 # 逐级尝试
