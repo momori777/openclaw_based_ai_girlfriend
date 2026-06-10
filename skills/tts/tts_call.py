@@ -67,7 +67,7 @@ RESTART_SCRIPT = _cfg['restart_script']
 LLAMA_PORT = _cfg.get('llama_port', 8080)
 
 # ========== 硬超时（防止子进程卡死不退出，导致 gateway session 锁死） ==========
-HARD_TIMEOUT = 300  # 秒，超过这个时间强制退出（推理最长3min + llama重启等待最长2min，留余量）
+HARD_TIMEOUT = 480  # TTS推理~10s + llama重启等待(含重试)最多420s，留余量
 
 
 def slugify(text, max_len=20):
@@ -279,6 +279,15 @@ try:
             print("[ERROR] TTS 未生成 wav 文件", file=sys.stderr)
             sys.exit(1)
 
+except TimeoutError:
+        # 超时时 wav 可能已生成（start_llama 阶段超时），不要 exit 1
+        if output_wav_path and os.path.exists(output_wav_path):
+            print(f"[TIMEOUT] 超时但音频已生成: {output_wav_path}", file=sys.stderr, flush=True)
+            sys.stdout.write(output_wav_path + '\n')
+            sys.stdout.flush()
+            sys.exit(0)
+        print("[TIMEOUT] 超时，无输出文件", file=sys.stderr, flush=True)
+        sys.exit(1)
 except Exception as e:
     import traceback
     traceback.print_exc(file=sys.stderr)
