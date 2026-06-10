@@ -316,6 +316,15 @@ if __name__ == "__main__":
         with TimeoutGuard(HARD_TIMEOUT, lock_file=LOCK_FILE):
             run_txt2img(positive_prompt, negative_prompt, seed, width, height,
                         steps, cfg, ckpt_name, manage_llama=manage_llama)
+    except TimeoutError:
+        # 超时时图片可能已保存（start_llama 阶段超时），不要 exit 1
+        if os.path.exists(out_path):
+            print(f"[TIMEOUT] 超时但图片已生成: {out_path}", file=sys.stderr, flush=True)
+            sys.stdout.write(out_path + '\n')
+            sys.stdout.flush()
+            sys.exit(0)
+        print(f"[TIMEOUT] 超时，无输出文件", file=sys.stderr, flush=True)
+        sys.exit(1)
     except Exception as e:
         import traceback
         traceback.print_exc(file=sys.stderr)

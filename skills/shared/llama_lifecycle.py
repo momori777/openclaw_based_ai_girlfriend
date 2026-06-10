@@ -365,7 +365,7 @@ def start_llama(port=8080, exe_path=None, model_path=None,
                 break
             time.sleep(0.5)
 
-    # VRAM 自适应 — 如果自由VRAM < 7GB，减ngl到30
+    # VRAM 自适应 — 如果自由VRAM不足，逐级降ngl
     try:
         ngl = 41
         import torch
@@ -374,6 +374,10 @@ def start_llama(port=8080, exe_path=None, model_path=None,
             if free < 7000:
                 ngl = 30
                 print(f"[LLAMA] VRAM 仅 {free:.0f} MiB，降 ngl 41→30",
+                      file=sys.stderr, flush=True)
+            if free < 4000:
+                ngl = 20
+                print(f"[LLAMA] VRAM 仅 {free:.0f} MiB，进一步降 ngl→20",
                       file=sys.stderr, flush=True)
     except Exception:
         ngl = 41
