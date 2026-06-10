@@ -332,13 +332,18 @@ def start_llama(port=8080, exe_path=None, model_path=None,
     """
     print("[LLAMA] 启动 llama-server...", file=sys.stderr, flush=True)
 
-    # VRAM 日志记录（不做硬阻塞，--no-mmap 靠 llama -fit 自适应）
+    # VRAM 激进清理 — ComfyUI 推理后 tensor 可能还被驱动持有
     try:
         import torch
         if torch.cuda.is_available():
             torch.cuda.synchronize()
             torch.cuda.empty_cache()
-            time.sleep(0.5)
+            import gc
+            gc.collect()
+            time.sleep(3)  # 等驱动回收
+            torch.cuda.empty_cache()
+            gc.collect()
+            time.sleep(2)
             free = torch.cuda.mem_get_info()[0] / (1024 ** 2)
             total = torch.cuda.mem_get_info()[1] / (1024 ** 2)
             print(f"[LLAMA] VRAM: {free:.0f} MiB free / {total:.0f} MiB total",
@@ -360,6 +365,19 @@ def start_llama(port=8080, exe_path=None, model_path=None,
                 break
             time.sleep(0.5)
 
+    # VRAM 自适应 — 如果自由VRAM < 7GB，减ngl到30
+    try:
+        ngl = 41
+        import torch
+        if torch.cuda.is_available():
+            free = torch.cuda.mem_get_info()[0] / (1024 ** 2)
+            if free < 7000:
+                ngl = 30
+                print(f"[LLAMA] VRAM 仅 {free:.0f} MiB，降 ngl 41→30",
+                      file=sys.stderr, flush=True)
+    except Exception:
+        ngl = 41
+
     args = [
         exe_path or "llama-server.exe",
         "-m", model_path or "",
@@ -367,7 +385,7 @@ def start_llama(port=8080, exe_path=None, model_path=None,
         "--flash-attn", "on",
         "-ctk", "q8_0",
         "-ctv", "q8_0",
-        "-ngl", "41",
+        "-ngl", str(ngl),
         "--cpu-moe",
         "--cpu-mask", "0xFFFFFFFF",
         "--batch-size", "4096",
