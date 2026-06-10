@@ -225,6 +225,25 @@ def run_txt2img(positive_prompt, negative_prompt, seed, width, height,
     print(f"输出: {out_path}", file=sys.stderr, flush=True)
     print("=" * 60, file=sys.stderr, flush=True)
 
+    # --- 释放 ComfyUI 模型显存，防止 start_llama OOM ---
+    del pos_out, neg_out
+    if model is not None:
+        del model
+    if clip is not None:
+        del clip
+    if vae is not None:
+        del vae
+    del images, state_dict, samples, latent
+    torch.cuda.empty_cache()
+    import gc
+    gc.collect()
+    # 等 GPU 真正释放 VRAM，峰值后给 5 秒让驱动回收
+    if manage_llama:
+        time.sleep(5)
+        print(f"[VRAM] ComfyUI 模型已释放，gc+empty_cache 完成",
+              file=sys.stderr, flush=True)
+    # ---
+
     if manage_llama:
         sys.stderr.flush()
         ok = start_llama(
@@ -233,6 +252,19 @@ def run_txt2img(positive_prompt, negative_prompt, seed, width, height,
             model_path=LLAMA_MODEL_PATH,
             log_dir=LLAMA_LOG_DIR,
         )
+        if not ok:
+            # 首次启动失败 → 再清一次 VRAM，等久一点，重试一次
+            print(f"[LLAMA] 启动失败，再清一次 VRAM 后重试...",
+                  file=sys.stderr, flush=True)
+            torch.cuda.empty_cache()
+            gc.collect()
+            time.sleep(10)
+            ok = start_llama(
+                port=LLAMA_PORT,
+                exe_path=LLAMA_EXE_PATH,
+                model_path=LLAMA_MODEL_PATH,
+                log_dir=LLAMA_LOG_DIR,
+            )
         if not ok:
             print(f"[LLAMA] 启动失败(VRAM不足或超时)，图像已保存到 {out_path}",
                   file=sys.stderr, flush=True)
