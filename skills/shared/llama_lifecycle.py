@@ -239,24 +239,29 @@ def acquire_lock(lock_file, label="skill"):
                     print(f"[LOCK] 检测到正在运行的 {label} (PID={old_pid})，跳过",
                           file=sys.stderr, flush=True)
                     return None, None
-            print("[LOCK] 旧锁文件残留（进程已死），清理中...",
-                  file=sys.stderr, flush=True)
-            os.remove(lock_file)
         except (ValueError, OSError, json.JSONDecodeError,
                 subprocess.TimeoutExpired):
-            print("[LOCK] 旧锁文件残留（进程已死），清理中...",
-                  file=sys.stderr, flush=True)
-            try:
-                os.remove(lock_file)
-            except FileNotFoundError:
-                pass
+            pass
 
     pid = os.getpid()
     exe_path = sys.executable
     lock_data = json.dumps({'pid': pid, 'exe': exe_path})
     os.makedirs(os.path.dirname(lock_file), exist_ok=True)
-    with open(lock_file, 'w') as f:
+    # 原子写入：先写临时文件，再用 os.replace（Windows 上基本原子）
+    tmp = lock_file + ".tmp" + str(pid)
+    with open(tmp, 'w') as f:
         f.write(lock_data)
+    try:
+        os.replace(tmp, lock_file)
+    except OSError:
+        # 另一个进程抢先了
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        print(f"[LOCK] 锁已被另一个进程持有",
+              file=sys.stderr, flush=True)
+        return None, None
     print(f"[LOCK] 已获取锁 (PID={pid}, exe={exe_path})",
           file=sys.stderr, flush=True)
     return str(pid), exe_path
@@ -421,13 +426,22 @@ def start_llama(port=8080, exe_path=None, model_path=None,
     if log_dir:
         os.makedirs(log_dir, exist_ok=True)
 
-    proc = subprocess.Popen(
-        args,
-        stdout=(open(os.path.join(log_dir, "llama-out.log"), "ab")
-                if log_dir else subprocess.DEVNULL),
-        stderr=(open(os.path.join(log_dir, "llama-err.log"), "ab")
-                if log_dir else subprocess.DEVNULL),
-    )
+    out_fh = None
+    err_fh = None
+    try:
+        if log_dir:
+            out_fh = open(os.path.join(log_dir, "llama-out.log"), "ab")
+            err_fh = open(os.path.join(log_dir, "llama-err.log"), "ab")
+        proc = subprocess.Popen(
+            args,
+            stdout=out_fh or subprocess.DEVNULL,
+            stderr=err_fh or subprocess.DEVNULL,
+        )
+    finally:
+        if out_fh:
+            out_fh.close()
+        if err_fh:
+            err_fh.close()
 
     print(f"[LLAMA] 已启动，PID={proc.pid}，等待端口 {port}...",
           file=sys.stderr, flush=True)
