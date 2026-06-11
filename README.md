@@ -144,6 +144,7 @@ Qwen3.6 MoE uses SSM (Gated Delta Net) hybrid attention with `--kv-unified`.
 
 ```
 AI_Girlfriend/                        # OpenClaw workspace root
+├── start.ps1                         # 🚀 One-click launch: llama + Live2D + Gateway
 ├── configure.ps1                     # 🛠 Interactive path config wizard
 ├── config.json                       # Generated config
 ├── download-models.ps1               # One-click model download (Windows)
@@ -319,7 +320,14 @@ powershell -File configure.ps1
 
 Interactive wizard — enter your local paths once, all scripts are updated automatically.
 
-### 4. Start Live2D
+### 4. Quick Launch
+
+```powershell
+# One-click start all services (llama + Live2D + Gateway)
+powershell -File start.ps1
+```
+
+### 5. Start Live2D Individually
 
 ```powershell
 # Start the bridge
@@ -331,7 +339,7 @@ Start-Process chrome -ArgumentList "--new-window --app=http://localhost:19200/in
 
 Live2D runs in a frameless Chrome window — place it anywhere on your desktop.
 
-### 5. Windows Task Scheduler
+### 5. Windows Task Scheduler (optional)
 
 ```powershell
 # Llama health check (every 10 min)

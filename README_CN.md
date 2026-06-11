@@ -146,6 +146,7 @@ Qwen3.6 MoE 使用 SSM (Gated Delta Net) 混合注意力，配合 `--kv-unified`
 
 ```
 AI_Girlfriend/                        # OpenClaw 工作区根目录
+├── start.ps1                         # 🚀 一键启动：llama + Live2D + Gateway
 ├── configure.ps1                     # 🛠 交互式路径配置向导
 ├── config.json                       # 生成的配置文件
 ├── download-models.ps1               # 一键模型下载 (Windows)
@@ -322,7 +323,14 @@ powershell -File configure.ps1
 
 交互式向导——输入一次本地路径，所有脚本自动更新。
 
-### 4. 启动 Live2D
+### 4. 快速启动
+
+```powershell
+# 一键启动所有服务（llama + Live2D + Gateway）
+powershell -File start.ps1
+```
+
+### 5. 单独启动 Live2D
 
 ```powershell
 # 启动桥接服务
@@ -334,7 +342,7 @@ Start-Process chrome -ArgumentList "--new-window --app=http://localhost:19200/in
 
 Live2D 在无边框 Chrome 窗口中运行——可以放在桌面上任意位置。
 
-### 5. Windows 任务计划
+### 5. Windows 任务计划（可选）
 
 ```powershell
 # Llama 健康检查（每 10 分钟）
