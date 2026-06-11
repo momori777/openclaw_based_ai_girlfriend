@@ -1,6 +1,7 @@
-# 记忆文件 - 不提交
-memory/
-!memory/role_play/.gitkeep
+# 记忆文件 - 选择性提交
+# 公开: role_play/ 后宫+酒馆导入示例, .dreams 白梦目录占位, tts.md 语言配置
+# memory/ 不用通配符 ignore，改为精确 ignore 运行时生成的临时文件
+# (不在 git 里的新文件如有敏感内容请手动 gitignore)
 
 # 生成的媒体文件
 media/qqbot/audio/*.wav
@@ -24,8 +25,8 @@ config.yaml
 # OpenClaw 状态
 .openclaw/
 
-# qqbot agent workspace (含私有数据)
-qqbot/
+# qqbot agent workspace (公开 AGENTS.md 配置模板)
+# 新产生的私有数据文件会由 .gitignore 的敏感配置/媒体规则覆盖
 
 # Python
 __pycache__/
