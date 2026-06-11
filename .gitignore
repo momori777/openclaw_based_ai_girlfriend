@@ -15,13 +15,17 @@ media/qqbot/images/*.jpg
 !media/qqbot/images/.gitkeep
 !.gitkeep
 
-# 敏感配置（含 token）不提交
+# 敏感配置（含 token/路径）不提交
 config-telegram.json
 config-qqbot.json
 config-patch.json
+config.yaml
 
 # OpenClaw 状态
 .openclaw/
+
+# qqbot agent workspace (含私有数据)
+qqbot/
 
 # Python
 __pycache__/

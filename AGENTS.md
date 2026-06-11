@@ -124,7 +124,14 @@ exec 完毕后：
 
 ### 调用方式
 
-直接用 `exec` PowerShell Invoke-WebRequest，**不杀 llama，不需要 spawn**：
+**Bridge 不在线时先启动它**（不杀 llama，直接 exec，不需要 spawn）：
+
+```powershell
+# 检查+启动 bridge（如果 19200 不通，启动后等 2s）
+try { Invoke-WebRequest -Uri "http://localhost:19200/api/status" -TimeoutSec 2 -UseBasicParsing | Out-Null } catch { Start-Process -FilePath node -ArgumentList "live2d-bridge.mjs" -WorkingDirectory "{{WORKSPACE}}\\live2d" -WindowStyle Hidden; Start-Sleep -Seconds 2 }
+```
+
+Bridge 在线后直接用 `exec` PowerShell Invoke-WebRequest，**不杀 llama，不需要 spawn**：
 
 ```powershell
 # 表情/动作

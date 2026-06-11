@@ -1,5 +1,5 @@
-"""
-Shared utility module — llama-server lifecycle awareness.
+﻿"""
+Shared utility module 鈥?llama-server lifecycle awareness.
 
 Used by tts_call.py, comfyui_call.py, and Sakura's local_llama_client.py.
 Eliminates duplicated port_open / wait_for_llama_ready across three codebases.
@@ -19,7 +19,7 @@ import urllib.request
 from typing import Callable
 
 
-# ── Port probe ──────────────────────────────────────────────────────────
+# 鈹€鈹€ Port probe 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
 def port_open(port: int, host: str = "127.0.0.1", timeout: float = 2.0) -> bool:
     """Check if TCP port is accepting connections."""
@@ -30,7 +30,7 @@ def port_open(port: int, host: str = "127.0.0.1", timeout: float = 2.0) -> bool:
         return False
 
 
-# ── Unavailability detection ────────────────────────────────────────────
+# 鈹€鈹€ Unavailability detection 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
 def detect_llama_unavailable(exc: object = None) -> bool:
     """Return True if local llama is unavailable (killed by TTS/ComfyUI).
@@ -62,7 +62,7 @@ def _exc_indicates_llama_dead(exc: object) -> bool:
     return not port_open(8080)
 
 
-# ── Health checks ───────────────────────────────────────────────────────
+# 鈹€鈹€ Health checks 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
 def _health_ok(port: int, timeout: float = 5.0) -> bool:
     """HTTP /health returns 200."""
@@ -77,24 +77,31 @@ def _health_ok(port: int, timeout: float = 5.0) -> bool:
 def _completion_ok(port: int, timeout: float = 10.0) -> bool:
     """Send a minimal completion probe to verify model can infer."""
     test_payload = json.dumps({
-        "model": "qwen3.6-35b",
-        "messages": [{"role": "user", "content": "hi"}],
-        "max_tokens": 1,
-        "stream": False,
+        "prompt": "hi",
+        "n_predict": 1,
+        "temperature": 0,
+        "cache_prompt": False,
     }).encode("utf-8")
     try:
         req = urllib.request.Request(
-            f"http://127.0.0.1:{port}/v1/chat/completions",
+            f"http://127.0.0.1:{port}/completion",
             data=test_payload,
-            headers={"Content-Type": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": "***",
+            },
         )
         with urllib.request.urlopen(req, timeout=timeout) as resp:
-            return resp.status == 200
+            if resp.status == 200:
+                body = resp.read()
+                data = json.loads(body)
+                return bool(data.get("content") or data.get("stop"))
     except Exception:
-        return False
+        pass
+    return False
 
 
-# ── Three-phase readiness check (main entry) ────────────────────────────
+# 鈹€鈹€ Three-phase readiness check (main entry) 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
 def wait_for_llama_ready(
     port: int = 8080,
@@ -133,7 +140,7 @@ def wait_for_llama_ready(
     _log("[LLAMA] Waiting for /health 200 (model loading)...")
     while time.monotonic() < deadline:
         if _health_ok(port):
-            _log("[LLAMA] /health 200 — model loaded")
+            _log("[LLAMA] /health 200 鈥?model loaded")
             break
         time.sleep(poll_interval)
 
@@ -141,15 +148,15 @@ def wait_for_llama_ready(
     _log("[LLAMA] Verifying /completion probe...")
     while time.monotonic() < deadline:
         if _completion_ok(port):
-            _log("[LLAMA] /completion passed — ready ✓")
+            _log("[LLAMA] /completion passed 鈥?ready 鉁?)
             return True
         time.sleep(poll_interval)
 
-    _log("[LLAMA] /completion not responding before timeout, port open — allow attempt")
+    _log("[LLAMA] /completion not responding before timeout, port open 鈥?allow attempt")
     return _health_ok(port)  # at least health passed
 
 
-# ── Quick check ─────────────────────────────────────────────────────────
+# 鈹€鈹€ Quick check 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
 def is_llama_ready(port: int = 8080) -> bool:
     """Quick check if llama-server can accept requests (non-blocking)."""
