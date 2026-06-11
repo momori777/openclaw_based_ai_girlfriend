@@ -1,7 +1,7 @@
 # download-models.ps1
 # AI Girlfriend 四季夏目 — 一键模型下载脚本 (Windows PowerShell)
 #
-# 从 HuggingFace 下载全部 5 个模型文件 (~29 GB)
+# 从 HuggingFace 下载全部 5 个模型文件 (~31.7 GB)
 # 需要: huggingface-cli (pip install huggingface_hub)
 #
 # 用法:
@@ -79,7 +79,7 @@ foreach ($d in $Dirs) {
 Write-Host ""
 Write-Host "Download directory: $BaseDir" -ForegroundColor Cyan
 Write-Host "Target: $HFRepo" -ForegroundColor Cyan
-Write-Host "Total: ~29 GB — this may take 30-90 minutes depending on network" -ForegroundColor Cyan
+Write-Host "Total: ~31.7 GB — this may take 30-90 minutes depending on network" -ForegroundColor Cyan
 Write-Host ""
 
 # 模型文件清单 (repo_path, local_path, description)

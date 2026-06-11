@@ -299,7 +299,7 @@ huggingface-cli login
 bash download-models.sh
 ```
 
-从 HuggingFace 下载全部 5 个模型文件（约 29 GB），含进度显示和断点续传。
+从 HuggingFace 下载全部 5 个模型文件（约 31.7 GB），含进度显示和断点续传。
 
 ### 2. 配置 llama.cpp
 

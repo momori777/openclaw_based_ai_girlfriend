@@ -2,7 +2,7 @@
 # download-models.sh
 # AI Girlfriend 四季夏目 — One-click model download script (Linux / macOS)
 #
-# Downloads all 5 model files (~29 GB) from HuggingFace
+# Downloads all 5 model files (~31.7 GB) from HuggingFace
 # Requires: huggingface-cli (pip install huggingface_hub)
 #
 # Usage:
@@ -64,7 +64,7 @@ mkdir -p "$BASE_DIR/gpt-sovits-weights/SoVITS_weights_v2Pro"
 echo ""
 echo "Download directory: $BASE_DIR"
 echo "Target: $HF_REPO"
-echo "Total: ~29 GB — this may take 30-90 minutes depending on network"
+echo "Total: ~31.7 GB — this may take 30-90 minutes depending on network"
 echo ""
 
 # Model file list (repo_path, local_filename, description)

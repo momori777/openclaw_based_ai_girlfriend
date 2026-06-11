@@ -296,7 +296,7 @@ huggingface-cli login
 bash download-models.sh
 ```
 
-Downloads all 5 model files (~29 GB) from HuggingFace with progress reporting and resume support.
+Downloads all 5 model files (~31.7 GB) from HuggingFace with progress reporting and resume support.
 
 ### 2. Setup llama.cpp
 
