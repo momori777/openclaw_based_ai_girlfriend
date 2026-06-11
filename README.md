@@ -375,6 +375,32 @@ OpenClaw Gateway              Live2D Bridge (:19200)
   └───────────────────────────────────┘
 ```
 
+**Agent Hub — Immutable Capability Instructions**:
+
+```
+         ┌─────────────┐
+         │  AGENTS.md   │  ← Capability hub (never changes on role switch)
+         │  SOUL.md     │  ← Current character persona (hot-swappable)
+         │  IDENTITY.md │  ← Character metadata
+         │  TOOLS.md    │  ← Quick reference
+         │  USER.md     │  ← User profile
+         └──────┬───────┘
+                │
+    ┌───────────┴────────────┐
+    ▼                        ▼
+ ┌──────────────┐   ┌──────────────────────┐
+ │ skills/harem/ │   │ memory/role_play/    │
+ │   (存档后宫)  │   │   <角色>/ (独立记忆)   │
+ │ ├─ natsume/   │   │ ├─ natsume/*.md      │
+ │ └─ enola/     │   │ └─ enola/*.md        │
+ └──────────────┘   └──────────────────────┘
+```
+
+- `AGENTS.md` stays constant across role switches — ComfyUI / TTS / Live2D instructions are preserved
+- `SOUL.md` + `IDENTITY.md` are overwritten on switch; harem archives source of truth
+- Memory per character isolated in `memory/role_play/<name>/` — never cross-contaminated
+- SillyTavern character cards imported via PNG tEXt chunk parsing → auto-switch agent persona
+
 **Four Skills, One Brain**:
 
 | Skill | Location | Llama Interaction |
@@ -383,6 +409,7 @@ OpenClaw Gateway              Live2D Bridge (:19200)
 | **TTS** | `skills/tts/` | Kill llama → GPT-SoVITS → restart + wait /health |
 | **ComfyUI** | `skills/comfyui/` | Kill llama → image gen → restart + wait /health |
 | **Sakura** | `skills/sakura/` | Shared llama-client; detects down → auto-resume |
+| **Character Importer** | `skills/character_importer/` | Agent-level — no GPU needed; writes SOUL/IDENTITY + memory dir |
 
 **VRAM Orchestration Flow**:
 1. Main session receives user request → assembles command

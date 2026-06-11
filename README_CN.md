@@ -380,7 +380,33 @@ OpenClaw Gateway              Live2D Bridge (:19200)
   └───────────────────────────────────┘
 ```
 
-**四大技能，一个大脑**：
+**Agent 中枢 — 角色切换不改的能力指令**：
+
+```
+         ┌─────────────┐
+         │  AGENTS.md   │  ← 能力中枢（角色切换时不动）
+         │  SOUL.md     │  ← 当前角色人格（热替换）
+         │  IDENTITY.md │  ← 角色元信息
+         │  TOOLS.md    │  ← 速查手册
+         │  USER.md     │  ← 用户设定
+         └──────┬───────┘
+                │
+    ┌───────────┴────────────┐
+    ▼                        ▼
+ ┌──────────────┐   ┌──────────────────────┐
+ │ skills/harem/ │   │ memory/role_play/    │
+ │   (后宫存档)  │   │   <角色>/ (独立记忆)   │
+ │ ├─ natsume/   │   │ ├─ natsume/*.md      │
+ │ └─ enola/     │   │ └─ enola/*.md        │
+ └──────────────┘   └──────────────────────┘
+```
+
+- `AGENTS.md` 在角色切换时保持不变——ComfyUI / TTS / Live2D 指令常驻
+- `SOUL.md` + `IDENTITY.md` 在切换时覆盖写入；harem/ 后宫目录是归档真相来源
+- 每个角色记忆隔离在 `memory/role_play/<角色名>/`——永不交叉污染
+- SillyTavern 角色卡通过 PNG tEXt 块解析导入 → agent 自动切换角色
+
+**五大技能，一个大脑**：
 
 | 技能 | 位置 | Llama 交互 |
 |-------|----------|-------------------|
@@ -388,6 +414,7 @@ OpenClaw Gateway              Live2D Bridge (:19200)
 | **TTS** | `skills/tts/` | 杀 llama → GPT-SoVITS → 重启 + 等待 /health |
 | **ComfyUI** | `skills/comfyui/` | 杀 llama → 画图 → 重启 + 等待 /health |
 | **Sakura** | `skills/sakura/` | 共享 llama-client；检测掉线 → 自动恢复 |
+| **角色导入手** | `skills/character_importer/` | Agent 层面——不需要 GPU；写入 SOUL/IDENTITY + 记忆目录 |
 
 **显存调度流程**：
 1. 主 session 收到用户请求 → 组装指令
