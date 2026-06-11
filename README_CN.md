@@ -301,6 +301,8 @@ bash download-models.sh
 
 从 HuggingFace 下载全部 5 个模型文件（约 31.7 GB），含进度显示和断点续传。
 
+> 如果 HuggingFace 被墙，可以去度盘下载：https://pan.baidu.com/s/1sLeSyVp76yzWcR3Q4pX0kA?pwd=0721 提取码:0721
+
 ### 2. 配置 llama.cpp
 
 自动检测 GPU、显存、CPU 核心数、内存，生成最优启动配置。
