@@ -1,4 +1,4 @@
-# AI 女友 — 四季夏目（Shiki Natsume）
+﻿# AI 女友 — 四季夏目（Shiki Natsume）
 
 **100% 本地 · 完全隐私 · 零 API 依赖**
 
@@ -44,6 +44,8 @@
 
 ## 功能特性
 
+- 🃏 **SillyTavern 角色卡导入** — 自动检测导入 PNG/JSON 角色卡，导入后 agent 自动切换角色
+- 💬 **聊天记录导入** — 导入 SillyTavern JSONL 对话记录到 `memory/role_play/<角色>/`，切换角色时 agent 恢复上下文
 - 💬 **QQ + Telegram 双通道** — 通过 OpenClaw Gateway 接入 QQ Bot 和 Telegram Bot
 - 🎤 **TTS 语音合成** — 本地 GPT-SoVITS 推理，日语语音（根据对话自动匹配情绪）
 - 🎨 **AI 画图** — 本地 ComfyUI 推理，SDXL/Illustrious 模型
@@ -214,7 +216,8 @@ AI_Girlfriend/                        # OpenClaw 工作区根目录
     │   └── app/                      # 源代码
     ├── llama-management.md           # 显存管理架构文档
     ├── llama-watchdog.ps1            # Llama 健康检查
-    └── cleanup_orphans.ps1           # 孤儿进程清理
+    ├── cleanup_orphans.ps1           # 孤儿进程清理
+    └── character_importer/           # SillyTavern 角色卡 + 对话记忆导入
 ```
 
 ## 技能总览

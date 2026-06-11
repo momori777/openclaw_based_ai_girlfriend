@@ -51,6 +51,8 @@ Character: **Shiki Natsume** (四季夏目), from *Starry Moonlit Café & the Bu
 - 🎭 **Live2D Character Model** — Real-time Live2D rendering with 10 motion groups, emotion-driven expressions, and speech bubbles
 - 🧠 **VRAM Scheduler** — Automatic llama-server ↔ TTS/ComfyUI orchestration on 8 GB VRAM
 - 💾 **Roleplay Memory** — Conversation summaries persisted to `memory/role_play/`
+- 🃏 **Character Card Import** — Auto-detect SillyTavern character cards via `skills/character_importer/`, import → agent auto-switches role
+- 💬 **Chat Import** — Import SillyTavern JSONL chat logs into `memory/role_play/<character>/`, agent restores conversation context on role switch
 
 ## Models
 
@@ -211,7 +213,8 @@ AI_Girlfriend/                        # OpenClaw workspace root
     │   └── app/                      # Source code
     ├── llama-management.md           # VRAM management architecture doc
     ├── llama-watchdog.ps1            # Llama health check
-    └── cleanup_orphans.ps1           # Orphan process cleanup
+    ├── cleanup_orphans.ps1           # Orphan process cleanup
+    └── character_importer/           # SillyTavern character card auto-import
 ```
 
 ## Skills Overview

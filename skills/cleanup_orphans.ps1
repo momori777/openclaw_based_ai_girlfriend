@@ -80,7 +80,7 @@ if ($WhatIf) {
 # Lock file paths — use environment-relative detection
 $WorkspaceRoot = if ($env:OPENCLAW_WORKSPACE) { $env:OPENCLAW_WORKSPACE } else { "$env:USERPROFILE\.openclaw\workspace" }
 $LockFiles = @(
-    "$WorkspaceRoot\comfyui_output\.comfyui_running.lock",
+    "$WorkspaceRoot\comfyui\.comfyui_running.lock",
     "$WorkspaceRoot\media\qqbot\audio\.tts_running.lock"
 )
 foreach ($LockFile in $LockFiles) {

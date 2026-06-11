@@ -140,8 +140,8 @@ Copy-Item "$ScriptDir\skills\*" $sd -Recurse -Force
 foreach ($d in @("$WorkspacePath\memory\role_play","$WorkspacePath\media\qqbot\audio","$WorkspacePath\media\qqbot\images")) {
     if (-not (Test-Path $d)) { New-Item -ItemType Directory $d -Force | Out-Null }
 }
-# path map
-@{gpt_sovits_dir=$GPTSoVitsDir;comfyui_dir=$ComfyUIDir;workspace=$WorkspacePath;created_at=(Get-Date -Format "o")} | ConvertTo-Json | Set-Content (Join-Path $WorkspacePath "path-map.json") -Encoding UTF8
+# config.yaml (路径配置)
+# 注意: config.yaml 由 quick_setup.ps1 生成，此处仅创建目录结构
 wok "工作区部署完成"
 Write-Host ""
 
@@ -304,12 +304,13 @@ Write-Host "  ╚═════════════════════
 Write-Host ""
 
 $edits = @(
-    @{F="$WorkspacePath\skills\tts\tts_call.py"; V=@("WEBUI_DIR","OUTPUT_DIR","LLAMA_EXE_PATH","LLAMA_MODEL_PATH","RESTART_SCRIPT")}
-    @{F="$WorkspacePath\skills\comfyui\comfyui_call.py"; V=@("COMFYUI_ROOT","PYTHON_PATH","CHECKPOINTS_DIR","OUTPUT_DIR","LLAMA_EXE_PATH","LLAMA_MODEL_PATH","RESTART_SCRIPT")}
-    @{F="$WorkspacePath\skills\tts\SKILL.md"; V=@("PS命令中的所有路径")}
-    @{F="$WorkspacePath\skills\comfyui\SKILL.md"; V=@("PS命令中的所有路径")}
-    @{F="$WorkspacePath\skills\llama-watchdog.ps1"; V=@("restart-llama.ps1路径","日志目录")}
-    @{F="$WorkspacePath\skills\cleanup_orphans.ps1"; V=@("workspace路径","task_flags目录")}
+    @{F="$WorkspacePath\skills\tts\tts_call.py"; V=@("从 config.yaml 读取路径")}
+    @{F="$WorkspacePath\skills\comfyui\comfyui_call.py"; V=@("从 config.yaml 读取路径")}
+    @{F="$WorkspacePath\skills\tts\run_tts.ps1"; V=@("从 config.yaml 读取路径")}
+    @{F="$WorkspacePath\skills\comfyui\run_comfyui.ps1"; V=@("从 config.yaml 读取路径")}
+    @{F="$WorkspacePath\skills\llama-watchdog.ps1"; V=@("已改为从 config.yaml 读取")}
+    @{F="$WorkspacePath\skills\cleanup_orphans.ps1"; V=@("锁文件路径已修正")}
+    @{F="$WorkspacePath\start.ps1"; V=@("从 config.yaml 读取路径")}
 )
 foreach ($e in $edits) {
     Write-Host "  📄 $($e.F)" -ForegroundColor White

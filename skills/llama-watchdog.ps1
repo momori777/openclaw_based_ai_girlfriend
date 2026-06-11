@@ -2,9 +2,28 @@
 # 纯 PowerShell watchdog，不依赖任何 LLM
 # 由 Windows Task Scheduler 每 10 分钟触发
 # 作用: 检查 llama-server 健康，宕机则自动重启
+# 路径: 从 workspace 根目录的 config.yaml 读取
 
 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-$logDir = "C:\Users\TK\Desktop\vllm\restart-logs"
+
+# ========== 从 config.yaml 读取路径 ==========
+$configPath = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'config.yaml'
+if (Test-Path $configPath) {
+    $configRaw = Get-Content $configPath -Raw -Encoding UTF8
+    function Get-YamlValue($raw, $key) {
+        $pattern = "(?m)^\s*${key}\s*:\s*`"?(.+?)`"?\s*$"
+        $m = [regex]::Match($raw, $pattern)
+        if ($m.Success) { return $m.Groups[1].Value.Trim('"').Trim() }
+        return $null
+    }
+    $logDir = Get-YamlValue $configRaw 'llama_log_dir'
+    $restartScript = Get-YamlValue $configRaw 'restart_script'
+} else {
+    # Fallback 默认路径
+    $logDir = "C:\Users\TK\Desktop\vllm\restart-logs"
+    $restartScript = "C:\Users\TK\Desktop\vllm\restart-llama.ps1"
+}
+
 $logFile = "$logDir\watchdog.log"
 $null = New-Item -ItemType Directory -Path $logDir -Force -ErrorAction SilentlyContinue
 
@@ -21,7 +40,11 @@ Write-WatchdogLog "=== watchdog check ==="
 $llamaProc = Get-Process llama-server -ErrorAction SilentlyContinue
 if (-not $llamaProc) {
     Write-WatchdogLog "llama-server not running, starting..."
-    & "C:\Users\TK\Desktop\vllm\restart-llama.ps1"
+    if ($restartScript -and (Test-Path $restartScript)) {
+        & $restartScript
+    } else {
+        Write-WatchdogLog "no restart script configured"
+    }
     Write-WatchdogLog "done"
     exit 0
 }
@@ -47,6 +70,10 @@ if ($healthy) {
 Write-WatchdogLog "process alive but port dead, restarting..."
 Stop-Process -Id $llamaProc.Id -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 2
-if ($restartScript) { & $restartScript } else { Write-WatchdogLog "no restart script configured" }
+if ($restartScript -and (Test-Path $restartScript)) {
+        & $restartScript
+    } else {
+        Write-WatchdogLog "no restart script configured"
+    }
 Write-WatchdogLog "done"
 exit 0

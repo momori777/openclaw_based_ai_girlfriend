@@ -111,3 +111,6 @@ package-lock.json
 .idea/
 *.swp
 *.swo
+
+# 后宫角色卡 - 保持版本控制
+!skills/harem/
