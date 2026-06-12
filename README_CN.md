@@ -45,11 +45,11 @@
 
 **性格与夏目完全相反**，支持一键热切换，记忆隔离。
 
-![ATRI Live2D](media/atri_live2d.mp4)
+![ATRI Live2D](media/atri_live2d.gif)
 
 > 👆 **亚托莉** Live2D：银发、红瞳、光脚白裙——天真烂漫，表情丰富。
 
-![ATRI ComfyUI](media/atri_comfyui.mp4)
+![ATRI ComfyUI](media/atri_comfyui.gif)
 
 > 👆 **亚托莉** ComfyUI：AI 画图——海边夕阳，白色连衣裙飘扬，金色时分的温暖光线。
 

@@ -45,11 +45,11 @@ From *ATRI -My Dear Moments-*. Petite, innocent, endlessly curious — a bright-
 
 **Personality opposite of Natsume**, hot-swappable with isolated memory.
 
-![ATRI Live2D](media/atri_live2d.mp4)
+![ATRI Live2D](media/atri_live2d.gif)
 
 > 👆 **ATRI** Live2D: silver hair, ruby-red eyes, barefoot in a white dress — innocent and expressive.
 
-![ATRI ComfyUI](media/atri_comfyui.mp4)
+![ATRI ComfyUI](media/atri_comfyui.gif)
 
 > 👆 **ATRI** ComfyUI: AI image generation — seaside sunset, flowing white dress, warm golden-hour lighting.
 
