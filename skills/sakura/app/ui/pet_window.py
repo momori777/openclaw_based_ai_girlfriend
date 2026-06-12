@@ -470,6 +470,9 @@ class PetWindow(QWidget):
             parent=self,
         )
 
+        # 接线 Llama 生命周期 ↔ Live2D 接管
+        self._wire_llama_live2d_hooks()
+
         self.bubble = QFrame(self)
         self.bubble.setObjectName("speechBubble")
 
@@ -872,6 +875,43 @@ class PetWindow(QWidget):
                 debug_log("Live2D", f"API status: {data}")
         except Exception as e:
             debug_log("Live2D", f"API status check failed: {e}")
+
+    def _wire_llama_live2d_hooks(self) -> None:
+        """接线 llama 生命周期 → Live2D 接管。
+
+        当 TTS/ComfyUI 杀死 llama-server 时：
+        - Sakura 的 LocalLlamaClient 检测到不可用
+        - 触发 on_llama_waiting → Live2D 播放"稍等哦..."+困惑动作
+        - llama 恢复后触发 on_llama_available → Live2D 恢复正常
+        """
+        l2d = self.portrait_controller.live2d_client
+        if l2d is None:
+            return
+
+        api_client = getattr(self, "api_client", None)
+        if api_client is None:
+            return
+
+        # 从 LocalLlamaClient 拿 hook 列表（鸭子类型）
+        waiting_hooks = getattr(api_client, "on_llama_waiting", None)
+        available_hooks = getattr(api_client, "on_llama_available", None)
+
+        if callable(waiting_hooks) and callable(available_hooks):
+            debug_log(
+                "PetWindow",
+                "接线 llama→Live2D 接管 hook（旧版 callback 接口）",
+            )
+            # 旧版: 单 callback
+            api_client.on_llama_waiting = l2d.on_llama_waiting
+            api_client.on_llama_available = l2d.on_llama_available
+        elif isinstance(waiting_hooks, list) and isinstance(available_hooks, list):
+            # 新版: callback 列表
+            waiting_hooks.append(l2d.on_llama_waiting)
+            available_hooks.append(l2d.on_llama_available)
+            debug_log(
+                "PetWindow",
+                "接线 llama→Live2D 接管 hook",
+            )
 
     def _remember_reply_history_segments(self, segments: list[ChatSegment]) -> None:
         clean_segments = [segment for segment in segments if segment.text.strip()]

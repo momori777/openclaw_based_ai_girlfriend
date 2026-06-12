@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Callable
 
 from app.llm.api_client import (
     ApiRequestError,
@@ -71,6 +71,11 @@ class LocalLlamaClient:
     - 不会自己 kill llama
     - 不会自己 restart llama
     - 只感知外部生命周期事件
+
+    Live2D 接管 Hook：
+    - on_llama_waiting: 检测到 llama 不可用，进入等待模式时触发
+    - on_llama_available: llama 恢复就绪时触发
+    - 两个 hook 都是无参 callback 列表，Sakura 桌宠注册后自动触发 Live2D 动作
     """
 
     def __init__(self, config: LocalLlamaConfig | None = None) -> None:
@@ -84,6 +89,9 @@ class LocalLlamaClient:
         self._primary_client = OpenAICompatibleClient(self._primary_settings)
         self._fallback_client: OpenAICompatibleClient | None = None
         self._llama_available = True
+        # Live2D 接管 hook
+        self.on_llama_waiting: list[Callable[[], None]] = []
+        self.on_llama_available: list[Callable[[], None]] = []
 
     @property
     def is_using_local(self) -> bool:
@@ -192,6 +200,10 @@ class LocalLlamaClient:
         4. llama 就绪 → 自动恢复，立即重新发请求
         5. 超时或 fallback 已配置 → 使用 fallback
 
+        同时触发 Live2D 接管 hook：
+        - 进入等待模式 → on_llama_waiting callbacks
+        - llama 恢复 → on_llama_available callbacks
+
         不做的事：
         - 不会自己 kill/restart llama（那是 TTS/ComfyUI 的职责）
         - 不会在等待期间盲目重试
@@ -209,6 +221,12 @@ class LocalLlamaClient:
             if not self._llama_available:
                 debug_log("LocalLlama", "llama 已恢复，切回本地")
                 self._llama_available = True
+                # 通知 Live2D：大脑恢复了
+                for cb in self.on_llama_available:
+                    try:
+                        cb()
+                    except Exception:
+                        pass
             return result
         except ApiRequestError as exc:
             if not detect_llama_unavailable(exc):
@@ -222,6 +240,13 @@ class LocalLlamaClient:
                 {"error": str(exc)[:200]},
             )
 
+            # 通知 Live2D：大脑离线中，接管桌宠
+            for cb in self.on_llama_waiting:
+                try:
+                    cb()
+                except Exception:
+                    pass
+
             # 等待 llama 重启就绪（使用共享模块三阶段验证）
             if wait_for_llama_ready(
                 port=_LLAMA_PORT,
@@ -230,6 +255,12 @@ class LocalLlamaClient:
             ):
                 debug_log("LocalLlama", "llama 恢复就绪，重试请求")
                 self._llama_available = True
+                # 通知 Live2D：大脑恢复
+                for cb in self.on_llama_available:
+                    try:
+                        cb()
+                    except Exception:
+                        pass
                 # 立即重新发请求
                 return operation(self._primary_client)
 
