@@ -8,7 +8,15 @@
 
 An AI girlfriend project powered by OpenClaw + QQ Bot + Telegram Bot + llama.cpp + GPT-SoVITS + ComfyUI + Sakura Desktop Pet + Live2D — running entirely on your own machine.
 
-Character: **Shiki Natsume** (四季夏目), from *Starry Moonlit Café & the Butterfly of Death*. Tall, aloof, cold exterior with a hidden warmth. Designed for *girlfriend experience* roleplay — she takes the lead.
+**Characters**: Supports hot-swappable AI girlfriends with isolated memories per character.
+
+### Shiki Natsume (四季夏目)
+
+From *Starry Moonlit Café & the Butterfly of Death*. Tall, aloof, cool exterior with a hidden warmth. A natural quietly-dominant type — she takes the lead, teases you gently, and guards you fiercely. Speaks little, but every word hits.
+
+### ATRI (亚托莉)
+
+From *ATRI -My Dear Moments-*. Petite, innocent, endlessly curious — a bright-eyed girl who wears her heart on her sleeve. Runs toward the future with a smile, dragging you along. **The polar opposite of Natsume**: bubbly and expressive where Natsume is reserved, emotionally transparent where Natsume is guarded, playful where Natsume is composed. If Natsume is the cool winter night, ATRI is the warm summer sun.
 
 ## ✨ Why This Project?
 
@@ -31,7 +39,19 @@ Character: **Shiki Natsume** (四季夏目), from *Starry Moonlit Café & the Bu
 ### Live2D Desktop Pet
 ![Live2D Demo](media/demo_live2d.gif)
 
-> 👆 Live2D: real-time character animation with emotion-driven motions, lip-sync, and speech bubbles. Controlled via local HTTP bridge.
+> 👆 **Shiki Natsume** Live2D: real-time character animation with emotion-driven motions, lip-sync, and speech bubbles. Controlled via local HTTP bridge.
+
+### ⭐ ATRI — Second AI Girlfriend
+
+**Personality opposite of Natsume**, hot-swappable with isolated memory.
+
+![ATRI Live2D](media/atri_live2d.mp4)
+
+> 👆 **ATRI** Live2D: silver hair, ruby-red eyes, barefoot in a white dress — innocent and expressive.
+
+![ATRI ComfyUI](media/atri_comfyui.mp4)
+
+> 👆 **ATRI** ComfyUI: AI image generation — seaside sunset, flowing white dress, warm golden-hour lighting.
 
 ## Hardware
 
@@ -51,6 +71,7 @@ Character: **Shiki Natsume** (四季夏目), from *Starry Moonlit Café & the Bu
 - 🎭 **Live2D Character Model** — Real-time Live2D rendering with 10 motion groups, emotion-driven expressions, and speech bubbles
 - 🧠 **VRAM Scheduler** — Automatic llama-server ↔ TTS/ComfyUI orchestration on 8 GB VRAM
 - 💾 **Roleplay Memory** — Conversation summaries persisted to `memory/role_play/`
+- 🔄 **Multi-Character Hot-Swap** — Switch between AI girlfriends (Natsume ⇄ ATRI) with one command; SOUL/IDENTITY/TTS weights/Live2D model all switch automatically, memories isolated per character
 - 🃏 **Character Card Import** — Auto-detect SillyTavern character cards via `skills/character_importer/`, import → agent auto-switches role
 - 💬 **Chat Import** — Import SillyTavern JSONL chat logs into `memory/role_play/<character>/`, agent restores conversation context on role switch
 
@@ -147,8 +168,8 @@ Qwen3.6 MoE uses SSM (Gated Delta Net) hybrid attention with `--kv-unified`.
 ```
 AI_Girlfriend/                        # OpenClaw workspace root
 ├── start.ps1                         # 🚀 One-click launch: llama + Live2D + Gateway
-├── configure.ps1                     # 🛠 Interactive path config wizard
-├── config.json                       # Generated config
+├── quick_setup.ps1                     # 🛠 Interactive path config wizard
+├── config.yaml                       # Generated config
 ├── download-models.ps1               # One-click model download (Windows)
 ├── download-models.sh                # One-click model download (Linux/macOS)
 ├── setup-llama.ps1                   # Auto-detect HW + configure llama.cpp (Win)
@@ -318,7 +339,7 @@ bash setup-llama.sh
 ### 3. Configure Paths
 
 ```powershell
-powershell -File configure.ps1
+powershell -File quick_setup.ps1
 ```
 
 Interactive wizard — enter your local paths once, all scripts are updated automatically.

@@ -1,4 +1,4 @@
-﻿# AI 女友 — 四季夏目（Shiki Natsume）
+# AI 女友 — 四季夏目（Shiki Natsume）
 
 **100% 本地 · 完全隐私 · 零 API 依赖**
 
@@ -8,7 +8,15 @@
 
 基于 OpenClaw + QQ Bot + Telegram Bot + llama.cpp + GPT-SoVITS + ComfyUI + Sakura 桌宠 + Live2D 的 AI 女友项目——完全在你自己的机器上运行。
 
-角色：**四季夏目**，出自《星光咖啡蝶与死神之馆》。高挑、清冷，外冷内热。定位为「女友体验」角色扮演——她会主动关心你，偶尔毒舌，安静陪伴。
+**角色**：支持热切换 AI 女友，每人独立记忆，互不干扰。
+
+### 四季夏目（Shiki Natsume）
+
+出自《星光咖啡蝶与死神之馆》。高挑、清冷，外冷内热。天然的四爱向——她会主动关心你，偶尔毒舌，安静陪伴。话不多，但每句都有分量。
+
+### 亚托莉（ATRI）
+
+出自《ATRI -My Dear Moments-》。娇小，天真烂漫，好奇心旺盛——拥有一双红宝石般清澈大眼睛的少女。总是带着笑容奔向明天，顺手拽上你。**性格与夏目完全相反**：一个热情开朗一个冷傲内敛，一个喜怒哀乐全写在脸上一个深藏不露，一个活泼好动一个沉静矜持。若说夏目是冬夜的冷月，亚托莉便是夏日的暖阳。
 
 ## ✨ 为什么选这个项目？
 
@@ -31,7 +39,19 @@
 ### Live2D 桌面宠物
 ![Live2D 演示](media/demo_live2d.gif)
 
-> 👆 Live2D：实时角色动画，情绪驱动动作 + 口型同步 + 对话气泡。通过本地 HTTP 桥控制。
+> 👆 **四季夏目** Live2D：实时角色动画，情绪驱动动作 + 口型同步 + 对话气泡。通过本地 HTTP 桥控制。
+
+### ⭐ 亚托莉 — 第二 AI 女友
+
+**性格与夏目完全相反**，支持一键热切换，记忆隔离。
+
+![ATRI Live2D](media/atri_live2d.mp4)
+
+> 👆 **亚托莉** Live2D：银发、红瞳、光脚白裙——天真烂漫，表情丰富。
+
+![ATRI ComfyUI](media/atri_comfyui.mp4)
+
+> 👆 **亚托莉** ComfyUI：AI 画图——海边夕阳，白色连衣裙飘扬，金色时分的温暖光线。
 
 ## 硬件配置
 
@@ -44,6 +64,7 @@
 
 ## 功能特性
 
+- 🔄 **多角色热切换** — 一键切换 AI 女友（夏目 ⇄ 亚托莉）；SOUL/IDENTITY/TTS 权重/Live2D 模型全部自动切换，记忆按角色隔离
 - 🃏 **SillyTavern 角色卡导入** — 自动检测导入 PNG/JSON 角色卡，导入后 agent 自动切换角色
 - 💬 **聊天记录导入** — 导入 SillyTavern JSONL 对话记录到 `memory/role_play/<角色>/`，切换角色时 agent 恢复上下文
 - 💬 **QQ + Telegram 双通道** — 通过 OpenClaw Gateway 接入 QQ Bot 和 Telegram Bot
@@ -149,8 +170,8 @@ Qwen3.6 MoE 使用 SSM (Gated Delta Net) 混合注意力，配合 `--kv-unified`
 ```
 AI_Girlfriend/                        # OpenClaw 工作区根目录
 ├── start.ps1                         # 🚀 一键启动：llama + Live2D + Gateway
-├── configure.ps1                     # 🛠 交互式路径配置向导
-├── config.json                       # 生成的配置文件
+├── quick_setup.ps1                     # 🛠 交互式路径配置向导
+├── config.yaml                       # 生成的配置文件
 ├── download-models.ps1               # 一键模型下载 (Windows)
 ├── download-models.sh                # 一键模型下载 (Linux/macOS)
 ├── setup-llama.ps1                   # 自动检测硬件 + 配置 llama.cpp (Win)
@@ -323,7 +344,7 @@ bash setup-llama.sh
 ### 3. 配置路径
 
 ```powershell
-powershell -File configure.ps1
+powershell -File quick_setup.ps1
 ```
 
 交互式向导——输入一次本地路径，所有脚本自动更新。
