@@ -1,4 +1,4 @@
-# AI Girlfriend — Shiki Natsume (四季夏目)
+# AI Girlfriend
 
 **100% Local · Fully Private · Zero API Dependencies**
 
