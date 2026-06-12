@@ -1,11 +1,90 @@
-﻿# 四季夏目 画图 Prompt 模板
+# AI 女友 画图 Prompt 模板
 
-## 角色特征
+---
+
+## 四季夏目 (Shiki Natsume)
+
+### 角色特征
 
 - **发色**: 黑色长直发
 - **瞳色**: 金色/黄色
 - **气质**: 高岭之花、清冷、外冷内热
+- **体型**: 高挑 (~170cm)
 - **着装偏好**: 女仆装、深色系连衣裙、校服、和风（巫女服/振袖）
+
+### 正向 Prompt 模板
+
+```
+masterpiece, best quality, (shiki natsume:1.2), 1girl, solo,
+long black hair, (yellow eyes:1.1), (cold expression:0.5),
+[场景描述], [着装描述],
+detailed face, detailed eyes, cinematic lighting, beautiful detailed background,
+(atmosphere:0.8)
+```
+
+### 常用场景组合
+
+1. **夜空神社**
+   - 场景: night sky, starry night, japanese shrine, moonlight, torii gate, lanterns
+   - 着装: japanese shrine maiden outfit, red hakama
+2. **咖啡馆**
+   - 场景: cafe, warm lighting, window, rain outside
+   - 着装: black dress, elegant
+3. **日常校园**
+   - 场景: school, cherry blossoms, spring
+   - 着装: school uniform
+4. **冬雪**
+   - 场景: snow, winter, quiet street, warm light from window
+   - 着装: black coat, scarf
+5. **花园**
+   - 场景: garden, flowers, sunset
+   - 着装: yukata, casual japanese dress
+
+---
+
+## 亚托莉 (ATRI)
+
+### 角色特征
+
+- **发色**: 银色/灰白色长发
+- **瞳色**: 红宝石色大眼，清澈透明
+- **气质**: 天真烂漫、活泼好奇、表情丰富
+- **体型**: 娇小 (~145cm), 纤细, 少女体型
+- **着装偏好**: 白色连衣裙（默认）、简单凉鞋或光脚、日常便服
+
+### 正向 Prompt 模板
+
+```
+masterpiece, best quality, (atri:1.2), 1girl, solo,
+silver hair, long hair, (ruby red eyes:1.1), (bright smile:0.7),
+mechanical ear accessories, barefoot,
+[场景描述], [着装描述],
+detailed face, detailed eyes, soft lighting, beautiful detailed background,
+(atmosphere:0.8)
+```
+
+### 常用场景组合
+
+1. **海边夕阳**
+   - 场景: seaside, sunset, golden hour, ocean horizon, gentle waves
+   - 着装: white dress, flowing skirt, barefoot, walking on beach
+2. **夏日田野**
+   - 场景: summer field, wildflowers, blue sky, white clouds, dirt path
+   - 着装: white dress, straw hat, sandals
+3. **海边小镇**
+   - 场景: coastal town, wooden pier, lighthouse in distance, calm sea
+   - 着装: white dress, simple sandals
+4. **星空夜**
+   - 场景: starry night sky, telescope, observatory, moonlight
+   - 着装: white dress, light cardigan
+5. **雨天室内**
+   - 场景: room, rain through window, warm lighting, cozy, bookshelf
+   - 着装: oversized shirt, casual
+6. **花园**
+   - 场景: garden, blooming flowers, butterflies, morning dew
+   - 着装: white dress, flower crown
+
+---
 
 ## 可用模型
 
@@ -15,38 +94,6 @@
 | **miaomiaoHarem_v20** | 6.5GB | 偏油润，知识库更新 | 2026-01 |
 
 **选择建议**: 一般用 WAI 层次感好；需要更新更全的知识库（新角色/新画风）时切 miaomiaoHarem。
-
-## 正向 Prompt 模板
-
-```
-masterpiece, best quality, (shiki natsume:1.2), 1girl, solo,
-long black hair, (yellow eyes:1.1), (cold expression:0.5), 
-[场景描述], [着装描述],
-detailed face, detailed eyes, cinematic lighting, beautiful detailed background,
-(atmosphere:0.8)
-```
-
-## 常用场景组合
-
-1. **夜空神社**
-   - 场景: night sky, starry night, japanese shrine, moonlight, torii gate, lanterns
-   - 着装: japanese shrine maiden outfit, red hakama
-
-2. **咖啡馆**
-   - 场景: cafe, warm lighting, window, rain outside
-   - 着装: black dress, elegant
-
-3. **日常校园**
-   - 场景: school, cherry blossoms, spring
-   - 着装: school uniform
-
-4. **冬雪**
-   - 场景: snow, winter, quiet street, warm light from window
-   - 着装: black coat, scarf
-
-5. **花**
-   - 场景: garden, flowers, sunset
-   - 着装: yukata, casual japanese dress
 
 ## 负向 Prompt（固定）
 

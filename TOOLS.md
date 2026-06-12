@@ -32,8 +32,8 @@ Motions: Idle, Tap外框, Tap摸头, Tap摸手, Start, Leave300_900_1800
 ## 角色切换
 
 ```powershell
-python D:\AI_Girlfriend\skills\character_importer\card_importer.py switch "card.png" --force
-python D:\AI_Girlfriend\skills\character_importer\card_importer.py switch-harem natsume
+python skills\character_importer\card_importer.py switch "card.png" --force
+python skills\character_importer\card_importer.py switch-harem natsume
 ```
 
 切换后 /reset 重新加载。

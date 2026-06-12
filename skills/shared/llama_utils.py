@@ -1,4 +1,4 @@
-﻿"""
+"""
 Shared utility module 鈥?llama-server lifecycle awareness.
 
 Used by tts_call.py, comfyui_call.py, and Sakura's local_llama_client.py.

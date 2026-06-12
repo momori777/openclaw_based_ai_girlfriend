@@ -30,8 +30,10 @@ from app.voice.runtime_compat import find_usable_runtime_python, format_runtime_
 
 
 TTSCallback = Callable[[], None]
-_AUDIO_CLEANUP_DELAY_MS = 200
+_AUDIO_CLEANUP_DELAY_MS = 5000
 _AUDIO_CLEANUP_MAX_ATTEMPTS = 5
+_AUDIO_FINISH_FALLBACK_GRACE_MS = 1500
+_AUDIO_FINISH_FALLBACK_MIN_MS = 2000
 _LATIN_LETTER_RE = re.compile(r"[A-Za-z]")
 _CJK_TEXT_LANGS = {"ja", "all_ja", "zh", "all_zh", "ko", "all_ko", "yue", "all_yue"}
 TTS_PROVIDER_NONE = "none"
@@ -46,6 +48,35 @@ _SUPPORTED_TTS_PROVIDERS = {
     TTS_PROVIDER_CUSTOM_GPT_SOVITS,
     TTS_PROVIDER_GENIE,
 }
+
+
+def _resolve_tts_cache_dir(base_dir: Path | None = None) -> Path:
+    """返回 TTS 临时音频缓存目录（data/cache/tts），并确保存在。
+
+    不再写入系统 Temp，改用 Sakura 自有数据目录，便于集中管理与启动清理。
+    base_dir 为空时基于 __file__ 推算项目根（app/voice/tts.py → 项目根），
+    与 main.py 的路径惯例一致。
+    """
+    root = Path(base_dir) if base_dir is not None else Path(__file__).resolve().parents[2]
+    cache_dir = root / "data" / "cache" / "tts"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    return cache_dir
+
+
+def purge_tts_cache(base_dir: Path | None = None) -> None:
+    """启动时清空 data/cache/tts 残留（崩溃/强退遗留的临时 wav）。
+
+    该目录完全归 Sakura 所有、仅存放 TTS 临时音频，清空安全。
+    逐个删除并忽略个别占用错误，不影响启动。
+    """
+    cache_dir = _resolve_tts_cache_dir(base_dir)
+    for entry in cache_dir.iterdir():
+        if not entry.is_file():
+            continue
+        try:
+            entry.unlink()
+        except OSError as exc:
+            debug_log("TTS", "启动清理缓存文件失败，已跳过", {"path": str(entry), "error": str(exc)})
 
 
 @dataclass

@@ -42,6 +42,44 @@ ST_CHATS_DIR = Path("C:/Users/TK/Desktop/vllm/SillyTavern/data/default-user/chat
 ROLE_FILES = ["SOUL.md", "IDENTITY.md"]
 ROOT_FILES = ["SOUL.md", "IDENTITY.md"]  # at workspace root
 
+# TTS 权重切换相关
+# 从 workspace/config.yaml 读取 sovits_root
+import yaml as _yaml
+_config_path = WORKSPACE_ROOT / "config.yaml"
+if _config_path.exists():
+    with open(_config_path, "r", encoding="utf-8") as _f:
+        _cfg = _yaml.safe_load(_f)
+    SOVITS_ROOT = Path(_cfg.get("sovits_root", ""))
+    WEIGHT_JSON = SOVITS_ROOT / "weight.json" if SOVITS_ROOT.exists() else None
+else:
+    SOVITS_ROOT = None
+    WEIGHT_JSON = None
+
+def _switch_tts_weights(chara_name: str):
+    """切换 GPT-SoVITS 的 weight.json 到指定角色的权重。
+    规则: weight_<角色名>.json 存在则用它替换 weight.json。
+    """
+    if not WEIGHT_JSON or not WEIGHT_JSON.parent.exists():
+        print("  [!] sovits_root 不存在，跳过 TTS 权重切换")
+        return
+    safe = chara_name.lower().replace(" ", "-")
+    chara_weight = WEIGHT_JSON.parent / f"weight_{safe}.json"
+    if chara_weight.exists():
+        # 读取角色权重（处理可能的 BOM）
+        try:
+            with open(chara_weight, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except json.JSONDecodeError:
+            with open(chara_weight, "r", encoding="utf-8-sig") as f:
+                data = json.load(f)
+        # 写入不带 BOM 的 weight.json
+        with open(WEIGHT_JSON, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
+        print(f"  [TTS] weight.json -> weight_{safe}.json")
+    else:
+        print(f"  [!] 未找到角色 TTS 权重: {chara_weight}")
+        print(f"  [!] 请确保 weight_{safe}.json 存在，使用默认 weight.json")
+
 # -- PNG/JSON Reading ---------------------------------------
 def read_png_chara(png_path: Path) -> Optional[dict]:
     try:
@@ -294,6 +332,9 @@ def do_switch(parsed: dict, source_name: str):
     mem_dir = ROLE_MEMORY_DIR / safe
     mem_dir.mkdir(parents=True, exist_ok=True)
 
+    # 切换 TTS 权重
+    _switch_tts_weights(safe)
+
     print(f"\n[OK] Switched to '{name}'!")
     print(f"     Role: skills/harem/{safe}/")
     print(f"     Memory: memory/role_play/{safe}/")
@@ -327,6 +368,9 @@ def do_switch_harem(name: str):
             sf = src / fname
             if sf.exists():
                 shutil.copy2(sf, OPENCLAW_WS / fname)
+
+    # 切换 TTS 权重
+    _switch_tts_weights(safe)
 
     print(f"\n[OK] Switched to '{name}' from harem!")
     print(f"     Previous '{old_key}' saved.")

@@ -79,35 +79,97 @@ def slugify(text, max_len=20):
     return cleaned or 'untitled'
 
 
-# ========== 参考音频目录（相对于 tts skill） ==========
+# ========== 参考音频目录（相对于 tts skill，按角色自动切换） ==========
 _tts_dir = os.path.dirname(os.path.abspath(__file__))
-REF_DIR = os.path.join(_tts_dir, "ref_wavs")
 
-# 14个预筛选的参考音频，按情绪分类
-REF_WAVES = {
-    "casual": [
-        {"path": os.path.join(REF_DIR, "ref_01_日常_忙しかった.wav"), "text": "あ、結構忙しかったわね", "lang": "日文"},
-        {"path": os.path.join(REF_DIR, "ref_02_日常_お疲れ様.wav"), "text": "今日も一日、お疲れ様", "lang": "日文"},
-        {"path": os.path.join(REF_DIR, "ref_03_日常_ありがとう.wav"), "text": "いつも頑張ってくれてありがとう", "lang": "日文"},
-        {"path": os.path.join(REF_DIR, "ref_04_日常_起きてて.wav"), "text": "よかったちゃんと起きててくれた", "lang": "日文"},
-        {"path": os.path.join(REF_DIR, "ref_05_日常_早起き.wav"), "text": "お店のために早起きしてくれて助かってる", "lang": "日文"},
-    ],
-    "tsundere": [
-        {"path": os.path.join(REF_DIR, "ref_06_傲娇_変なこと.wav"), "text": "言っとくけど変なことはしないからね", "lang": "日文"},
-        {"path": os.path.join(REF_DIR, "ref_07_傲娇_キモい.wav"), "text": "割とキモい。普通にキモいから", "lang": "日文"},
-        {"path": os.path.join(REF_DIR, "ref_08_傲娇_ここでは.wav"), "text": "あと何度も言うけどここではしない", "lang": "日文"},
-        {"path": os.path.join(REF_DIR, "ref_09_傲娇_おやすみ.wav"), "text": "おやすみなさい", "lang": "日文"},
-    ],
-    "romantic": [
-        {"path": os.path.join(REF_DIR, "ref_10_深情_好きって.wav"), "text": "それに、君のこと好きってこと", "lang": "日文"},
-        {"path": os.path.join(REF_DIR, "ref_11_深情_大好き.wav"), "text": "好き、大好き", "lang": "日文"},
-        {"path": os.path.join(REF_DIR, "ref_12_深情_情けない顔.wav"), "text": "その情けない顔と声…好き", "lang": "日文"},
-    ],
-    "long": [
-        {"path": os.path.join(REF_DIR, "ref_13_长句_表情筋.wav"), "text": "普段使わない表情筋を酷使してるから", "lang": "日文"},
-        {"path": os.path.join(REF_DIR, "ref_14_长句_彼女っていう.wav"), "text": "あのさこれは彼女っていうより", "lang": "日文"},
-    ],
-}
+
+def _detect_character():
+    """检测当前活跃角色名（从 workspace 的 SOUL.md）"""
+    # workspace 路径: skills/tts/tts_call.py -> workspace root
+    ws_root = os.path.join(_tts_dir, "..", "..")
+    soul_path = os.path.join(ws_root, "SOUL.md")
+    if os.path.exists(soul_path):
+        with open(soul_path, "r", encoding="utf-8") as f:
+            first = f.readline().strip()
+        m = re.match(r"^# SOUL\.md\s*-\s*(.+)$", first)
+        if m:
+            return m.group(1).strip().lower().replace(" ", "-")
+    return None
+
+
+def _resolve_ref_dir():
+    """根据活跃角色解析参考音频目录。
+    规则: ref_wavs_<角色名> 优先，否则用 ref_wavs（默认夏目）。
+    """
+    chara = _detect_character()
+    if chara:
+        chara_dir = os.path.join(_tts_dir, f"ref_wavs_{chara}")
+        if os.path.isdir(chara_dir) and os.listdir(chara_dir):
+            return chara_dir
+    return os.path.join(_tts_dir, "ref_wavs")
+
+
+REF_DIR = _resolve_ref_dir()
+
+
+def _load_ref_waves(ref_dir):
+    """扫描参考音频目录，按文件名约定归类。
+    文件名格式: ref_NN_情绪_文本描述.wav
+    情绪 → mood 映射:
+      日常/casual → casual
+      傲娇/tsundere/困惑 → tsundere
+      深情/romantic → romantic
+      长句/long → long
+    参考文本从文件名提取（去掉前缀和扩展名）或从同目录对应的.txt文件读取。
+    """
+    MOOD_MAP = {
+        "日常": "casual", "casual": "casual",
+        "傲娇": "tsundere", "tsundere": "tsundere", "困惑": "tsundere",
+        "深情": "romantic", "romantic": "romantic",
+        "长句": "long", "long": "long",
+    }
+    ref_waves = {"casual": [], "tsundere": [], "romantic": [], "long": []}
+    if not os.path.isdir(ref_dir):
+        return ref_waves
+    for fname in sorted(os.listdir(ref_dir)):
+        if not fname.lower().endswith(".wav"):
+            continue
+        fpath = os.path.join(ref_dir, fname)
+        stem = os.path.splitext(fname)[0]  # ref_01_日常_おはよう
+        parts = stem.split("_")
+        # 查找情绪关键词
+        mood = None
+        for p in parts:
+            if p in MOOD_MAP:
+                mood = MOOD_MAP[p]
+                break
+        if mood is None:
+            mood = "casual"  # fallback
+        # 参考文本：同目录下同名 .txt 文件，否则用文件名剩余部分
+        txt_path = os.path.join(ref_dir, stem + ".txt")
+        if os.path.exists(txt_path):
+            with open(txt_path, "r", encoding="utf-8") as f:
+                ref_text = f.read().strip()
+        else:
+            # 从文件名提取: ref_01_日常_おはよう → おはよう
+            # 格式: ref_NN_情绪_文本
+            text_parts = []
+            capture = False
+            for p in parts:
+                if capture:
+                    text_parts.append(p)
+                elif p in MOOD_MAP:
+                    capture = True
+            ref_text = " ".join(text_parts) if text_parts else stem
+        ref_waves[mood].append({
+            "path": fpath,
+            "text": ref_text,
+            "lang": "日文",
+        })
+    return ref_waves
+
+
+REF_WAVES = _load_ref_waves(REF_DIR)
 
 # 反向查找：文件名 → {path, text, lang}
 REF_INDEX = {}

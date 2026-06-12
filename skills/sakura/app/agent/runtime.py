@@ -101,21 +101,32 @@ class AgentRuntime:
         """允许模型在对话或主动事件中自主决定是否观察屏幕。"""
         self.autonomous_screen_observation_enabled = enabled
 
+    def _resolve_dialogue_params(self) -> tuple[float, dict[str, Any]]:
+        """读取角色对话生成参数，兼容测试桩和外部传入的旧客户端实现。"""
+        resolver = getattr(self.api_client, "resolve_dialogue_params", None)
+        if callable(resolver):
+            return resolver()
+        return 0.8, {}
+
     def _parse_final_reply_with_retry(
         self,
         system_prompt: str,
         working_messages: list[ChatMessage],
         raw_content: str,
     ) -> ChatReply:
-        """最终回复结构不合格时，只重试一次格式修复，避免坏 JSON 进入 UI。"""
+        """最终回复结构不合格时，只重试一次格式修复，避免坏 JSON 进入 UI。
+        同时检查回复是否包含显示译文——中/英/日切换时确保字幕正确。"""
         parsed = parse_chat_reply_result(raw_content)
-        if not parsed.needs_retry:
+        retry_reason = parsed.reason if parsed.needs_retry else ""
+        if not parsed.needs_retry and _reply_has_display_translation(parsed.reply):
             return parsed.reply
+        if not retry_reason:
+            retry_reason = "missing_translation"
 
         debug_log(
             "AgentRuntime",
             "最终回复结构异常，准备请求模型修复",
-            {"reason": parsed.reason, "raw_content": raw_content},
+            {"reason": retry_reason, "raw_content": raw_content},
         )
         repair_messages: list[ChatMessage] = [
             *working_messages,
@@ -250,8 +261,10 @@ class AgentRuntime:
                     working_messages,
                     tools=tool_defs,
                     tool_choice="auto",
-                    temperature=0.8,
+                    resolved_temperature, resolved_extra = self._resolve_dialogue_params()
+                temperature=resolved_temperature,
                     structured_response=True,
+                    **(resolved_extra),
                 )
             except ApiRequestError as exc:
                 if messages_contain_image(working_messages) and is_vision_unsupported_error(exc):
@@ -2280,3 +2293,14 @@ def _load_natsume_memory_block(external_memory_dir: str) -> str:
     header = f"【共享记忆：四季夏目 （Natsume）的记忆摘要（最近 {file_count} 个文件）】"
     all_blocks = "\n\n".join(parts)
     return f"{header}\n{all_blocks}"
+
+
+def _reply_has_display_translation(reply: ChatReply) -> bool:
+    """最终回复需要中文显示文本，避免兼容模型的纯日语正文漏到中文字幕 UI。
+
+    夏目和亚托莉都支持中/英/日三语，此检查确保每个 segment 的 zh/jp 字段成对。
+    """
+    return any(
+        segment.text.strip() and segment.translation.strip()
+        for segment in reply.segments
+    )

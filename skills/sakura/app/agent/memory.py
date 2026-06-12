@@ -131,7 +131,10 @@ class MemoryStore:
         self.reset_runtime()
 
     def reset_runtime(self) -> None:
+        old_memory: Any | None = None
         with self._lock:
+            if self._memory is not None and self._memory is not self.memory_client:
+                old_memory = self._memory
             self._memory = self.memory_client
             self._loading = False
             self._loading_started_at = 0.0
@@ -145,6 +148,7 @@ class MemoryStore:
             else:
                 self._status = "idle"
                 self._status_message = ""
+        _close_memory_client(old_memory)
 
     def is_ready(self) -> bool:
         """返回长期记忆运行时是否已经可直接使用。"""
@@ -887,3 +891,23 @@ def _positive_int(value: Any, default: int) -> int:
     except (TypeError, ValueError):
         return default
     return max(1, number)
+
+
+def _close_memory_client(memory: Any | None) -> None:
+    """释放 mem0 及本地 Qdrant 资源，避免重建时残留文件锁。"""
+    if memory is None:
+        return
+    close = getattr(memory, "close", None)
+    if callable(close):
+        try:
+            close()
+        except Exception:
+            logger.debug("关闭 mem0 运行时失败", exc_info=True)
+    vector_store = getattr(memory, "vector_store", None)
+    client = getattr(vector_store, "client", None)
+    client_close = getattr(client, "close", None)
+    if callable(client_close):
+        try:
+            client_close()
+        except Exception:
+            logger.debug("关闭 Qdrant 客户端失败", exc_info=True)

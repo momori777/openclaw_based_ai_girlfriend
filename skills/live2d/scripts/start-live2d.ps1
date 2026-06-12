@@ -1,4 +1,4 @@
-﻿# Live2D Bridge 鍚姩鑴氭湰
+# Live2D Bridge 鍚姩鑴氭湰
 # 鐢ㄦ硶: powershell -File start-live2d.ps1
 # 鎴? powershell -File start-live2d.ps1 -NoBrowser
 

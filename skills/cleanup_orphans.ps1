@@ -1,4 +1,4 @@
-﻿param(
+param(
     [int]$MaxAgeSeconds = 600,
     [switch]$WhatIf
 )

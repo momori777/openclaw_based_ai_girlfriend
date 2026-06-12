@@ -1,4 +1,4 @@
-﻿# llama-watchdog.ps1
+# llama-watchdog.ps1
 # 纯 PowerShell watchdog，不依赖任何 LLM
 # 由 Windows Task Scheduler 每 10 分钟触发
 # 作用: 检查 llama-server 健康，宕机则自动重启
