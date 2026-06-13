@@ -148,7 +148,7 @@ def wait_for_llama_ready(
     _log("[LLAMA] Verifying /completion probe...")
     while time.monotonic() < deadline:
         if _completion_ok(port):
-            _log("[LLAMA] /completion passed 鈥?ready 鉁?)
+            _log("[LLAMA] /completion passed - ready")
             return True
         time.sleep(poll_interval)
 

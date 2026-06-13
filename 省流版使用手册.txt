@@ -1,0 +1,21 @@
+Artemis 省流版使用手册
+====================
+
+一、启动
+    .\start.ps1
+    首次用先跑 quick_setup.ps1 配好路径
+
+二、关闭
+    .\start.ps1 -Stop
+    或对夏目说"拜拜"，她自己关
+
+三、调试（四层，从下往上查）
+    1.GPU层   → 浏览器打开 http://127.0.0.1:8080/health 看llama活着没
+    2.桌宠层 → Live2D看 http://localhost:19200/api/status ；Sakura直接看桌面
+    3.能力层 → 直接跑 skills/tts/tts_call.py 或 skills/comfyui/comfyui_call.py
+    4.中枢层 → openclaw gateway status ；日志在 %TEMP%\openclaw\
+
+常见坑：
+    - llama起不来 → config.yaml里llama_exe/llama_model路径对不对
+    - 图片/语音只返回路径没文件 → 跑一下 sync_qqbot_workspace.py
+    - Sakura闪退 → 进 skills/sakura/ 手动跑 start.bat 看报啥错

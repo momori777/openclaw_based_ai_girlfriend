@@ -125,7 +125,11 @@ if (-not $ComfyUIDir) {
 }
 
 # 复制文件 (不覆盖已存在)
-$files = @("AGENTS.md","SOUL.md","IDENTITY.md","USER.md","HEARTBEAT.md","TOOLS.md","config-patch.json","models.yaml",".gitignore")
+$files = @(
+    "AGENTS.md","SOUL.md","IDENTITY.md","USER.md","HEARTBEAT.md",
+    "TOOLS.md","config-patch.json","models.yaml",".gitignore",
+    "shutdown_all.py","start.ps1","config.example.yaml"
+)
 foreach ($f in $files) {
     $dst = Join-Path $WorkspacePath $f
     if (Test-Path (Join-Path $ScriptDir $f) -and -not (Test-Path $dst)) {
@@ -296,42 +300,26 @@ else {
 }
 Write-Host ""
 
-# ═══ 7. 路径检查 ═══
-step 7 "路径检查 & 修复清单"
-Write-Host "  ╔════════════════════════════════════════════════════════╗" -ForegroundColor Yellow
-Write-Host "  ║  ⚠️ 以下文件有硬编码路径，需手动修改！                  ║" -ForegroundColor Yellow
-Write-Host "  ╚════════════════════════════════════════════════════════╝" -ForegroundColor Yellow
-Write-Host ""
-
-$edits = @(
-    @{F="$WorkspacePath\skills\tts\tts_call.py"; V=@("从 config.yaml 读取路径")}
-    @{F="$WorkspacePath\skills\comfyui\comfyui_call.py"; V=@("从 config.yaml 读取路径")}
-    @{F="$WorkspacePath\skills\tts\run_tts.ps1"; V=@("从 config.yaml 读取路径")}
-    @{F="$WorkspacePath\skills\comfyui\run_comfyui.ps1"; V=@("从 config.yaml 读取路径")}
-    @{F="$WorkspacePath\skills\llama-watchdog.ps1"; V=@("已改为从 config.yaml 读取")}
-    @{F="$WorkspacePath\skills\cleanup_orphans.ps1"; V=@("锁文件路径已修正")}
-    @{F="$WorkspacePath\start.ps1"; V=@("从 config.yaml 读取路径")}
-)
-foreach ($e in $edits) {
-    Write-Host "  📄 $($e.F)" -ForegroundColor White
-    foreach ($v in $e.V) { Write-Host "     → $v" -ForegroundColor Yellow }
-    Write-Host ""
-}
-Write-Host "  💡 用 VS Code 全局替换: Ctrl+Shift+H → C:\Users\TK → 你的用户名" -ForegroundColor Cyan
+# ═══ 7. 配置检查 ═══
+step 7 "配置检查"
+Write-Host "  所有关键路径已通过 config.yaml 统一配置，无需手动修改脚本。" -ForegroundColor Green
+Write-Host "  如路径变更，重新运行 quick_setup.ps1 即可。" -ForegroundColor Gray
 Write-Host ""
 
 # ═══ 8. 启动服务 ═══
 step 8 "启动服务"
 if ($NoStart) { info "已跳过" }
 else {
-    $ls = "$ScriptDir\llama-config\launch-llama.ps1"
+    $ls = Join-Path $ScriptDir "start.ps1"
     if (Test-Path $ls) {
-        info "启动 llama-server..."
-        Start-Process powershell -ArgumentList '-File',$ls -WindowStyle Minimized
-        wok "llama-server 已启动 (约12s加载)"
-    } else { warn "找不到 launch-llama.ps1" }
-    info "启动 OpenClaw Gateway..."
-    try { & openclaw gateway start 2>&1 | Out-Null; wok "Gateway 已启动" } catch { warn "手动: openclaw gateway start" }
+        info "启动全部服务 (llama + Live2D + Gateway)..."
+        & powershell -File $ls
+        wok "服务启动完成"
+    } else {
+        warn "找不到 start.ps1，手动启动:"
+        info "  1. 启动 llama: Start-Process powershell -ArgumentList '-File $ScriptDir\llama-config\launch-llama.ps1' -WindowStyle Hidden"
+        info "  2. 启动 Gateway: openclaw gateway start"
+    }
 }
 Write-Host ""
 
@@ -352,25 +340,11 @@ Write-Host "║           总耗时: ${elapsed}min | 工作区: $WorkspacePath" 
 Write-Host "╚═══════════════════════════════════════════════════════════════════╝" -ForegroundColor Green
 Write-Host ""
 Write-Host "  📋 必做清单:" -ForegroundColor Yellow
-Write-Host "    1. 修改 skills/*.py + SKILL.md 中的硬编码路径 (见Step 6)" -ForegroundColor White
+Write-Host "    1. 运行 quick_setup.ps1 生成 config.yaml (路径配置)" -ForegroundColor White
 Write-Host "    2. 修改 USER.md (你的名字/称呼)" -ForegroundColor White
 Write-Host "    3. (如跳过Step 5) 手动配置 QQ/Telegram Bot Token" -ForegroundColor White
 Write-Host ""
 Write-Host "  🚀 日常启动:" -ForegroundColor Cyan
-Write-Host "    powershell -File start-girlfriend.ps1" -ForegroundColor White
-Write-Host "    openclaw gateway --open  # 打开 Web Chat" -ForegroundColor White
+Write-Host "    .\start.ps1          # 一键启动全部服务" -ForegroundColor White
+Write-Host "    .\start.ps1 -Stop    # 一键停止全部服务" -ForegroundColor White
 Write-Host ""
-
-# 生成快捷启动脚本
-@"
-# start-girlfriend.ps1 — AI Girlfriend 快速启动 (由 setup-all.ps1 生成)
-Write-Host "🌸 启动 AI Girlfriend..." -ForegroundColor Magenta
-`$launch = "$ScriptDir\llama-config\launch-llama.ps1"
-if ((Test-Path `$launch) -and -not (Get-Process llama-server -EA 0)) {
-    Start-Process powershell -ArgumentList '-File',`$launch -WindowStyle Minimized
-    Write-Host "llama-server 启动中..." -ForegroundColor Green
-} else { Write-Host "llama-server 已在运行" -ForegroundColor Green }
-try { openclaw gateway start 2>`$null; Write-Host "Gateway 已启动" -ForegroundColor Green } catch { Write-Host "请手动: openclaw gateway start" -ForegroundColor Yellow }
-Write-Host "✅ 准备就绪。打开浏览器: http://127.0.0.1:18789" -ForegroundColor Green
-"@ | Set-Content (Join-Path $ScriptDir "start-girlfriend.ps1") -Encoding UTF8
-wok "已生成 start-girlfriend.ps1 (日常一键启动)"

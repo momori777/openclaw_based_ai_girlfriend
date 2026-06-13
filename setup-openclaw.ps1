@@ -175,7 +175,10 @@ if ($SkipDeploy) {
         "TOOLS.md",
         "config-patch.json",
         "models.yaml",
-        ".gitignore"
+        ".gitignore",
+        "shutdown_all.py",
+        "start.ps1",
+        "config.example.yaml"
     )
 
     Write-Host "  Copying workspace config files..." -ForegroundColor Gray
@@ -230,13 +233,7 @@ if ($SkipDeploy) {
 
     Write-Host "  Workspace deployed to: $WorkspacePath" -ForegroundColor Green
     Write-Host ""
-    Write-Host "  ⚠️  IMPORTANT — Paths to update in your workspace:" -ForegroundColor Yellow
-    Write-Host "    $WorkspacePath\skills\tts\tts_call.py" -ForegroundColor White
-    Write-Host "    $WorkspacePath\skills\tts\SKILL.md" -ForegroundColor White
-    Write-Host "    $WorkspacePath\skills\comfyui\comfyui_call.py" -ForegroundColor White
-    Write-Host "    $WorkspacePath\skills\comfyui\SKILL.md" -ForegroundColor White
-    Write-Host "    $WorkspacePath\skills\llama-watchdog.ps1" -ForegroundColor White
-    Write-Host "  Update PYTHON_PATH, WEBUI_DIR, COMFYUI_ROOT, LLAMA_MODEL_PATH etc." -ForegroundColor Yellow
+    Write-Host "  💡 路径配置: 运行 quick_setup.ps1 生成 config.yaml" -ForegroundColor Cyan
 }
 
 # ============================================================================
@@ -329,12 +326,10 @@ Write-Host ""
 
 # Final checklist
 Write-Host "  📋 Post-setup Checklist:" -ForegroundColor Yellow
-Write-Host "    ☐ 1. Update paths in skills/tts/tts_call.py" -ForegroundColor White
-Write-Host "    ☐ 2. Update paths in skills/comfyui/comfyui_call.py" -ForegroundColor White
-Write-Host "    ☐ 3. Verify llama-server is running: http://127.0.0.1:8080/health" -ForegroundColor White
-Write-Host "    ☐ 4. Apply config-patch.json: openclaw gateway config.patch.apply" -ForegroundColor White
-Write-Host "    ☐ 5. Configure QQ Bot channel (see README.md)" -ForegroundColor White
-Write-Host "    ☐ 6. Test: send a message through your QQ Bot" -ForegroundColor White
+Write-Host "    ☐ 1. 运行 quick_setup.ps1 生成 config.yaml" -ForegroundColor White
+Write-Host "    ☐ 2. 验证 llama-server: http://127.0.0.1:8080/health" -ForegroundColor White
+Write-Host "    ☐ 3. 日常启动: .\start.ps1  |  停止: .\start.ps1 -Stop" -ForegroundColor White
+Write-Host "    ☐ 4. 配置 QQ Bot channel (见 README.md)" -ForegroundColor White
 Write-Host ""
 
 # Print next steps

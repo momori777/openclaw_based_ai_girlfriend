@@ -1,15 +1,31 @@
-# start.ps1 — 一键启动全部 Shiki 服务
-# Usage: .\start.ps1
-# 
+# start.ps1 — 一键启停全部 Shiki 服务
+# Usage:
+#   .\start.ps1       启动全部服务
+#   .\start.ps1 -Stop  停止全部服务（等价于 shutdown_all.py）
+#
 # 启动顺序:
 #   1. llama-server (从 config.yaml 读取路径, ngl=41 batch=1024/512)
 #   2. Live2D Bridge (localhost:19200)
 #   3. OpenClaw Gateway
 
+param([switch]$Stop)
+
 $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 
 $scriptRoot = $PSScriptRoot
+
+# ========== Stop mode: delegate to shutdown_all.py ==========
+if ($Stop) {
+    $shutdownScript = Join-Path $scriptRoot "shutdown_all.py"
+    if (Test-Path $shutdownScript) {
+        & python $shutdownScript
+    } else {
+        Write-Host "ERROR: shutdown_all.py not found at $shutdownScript" -ForegroundColor Red
+        exit 1
+    }
+    exit $LASTEXITCODE
+}
 
 # ========== 读取 config.yaml ==========
 $configPath = Join-Path $scriptRoot "config.yaml"

@@ -552,17 +552,15 @@ Write-Host "  Watchdog:       $watchdogPath" -ForegroundColor Gray
 
 # ── Task Scheduler setup ──
 $taskSched = @"
-# Run these in an elevated PowerShell to set up auto-restart:
+# Run in an elevated PowerShell to set up auto-restart:
 
 # Llama health check (every 10 minutes)
 schtasks /create /tn "llama-watchdog" `
   /tr "powershell -File '$watchdogPath'" `
   /sc minute /mo 10
 
-# Orphan cleanup (hourly — only if you have cleanup_orphans.ps1)
-# schtasks /create /tn "cleanup-llama-orphans" `
-#   /tr "powershell -File '.\skills\cleanup_orphans.ps1'" `
-#   /sc hourly /mo 1
+# Orphan cleanup is handled by OpenClaw cron (cleanup-orphans job)
+# No separate Windows task needed.
 "@
 
 $schedPath = Join-Path $outputDir "setup-task-scheduler.ps1"
