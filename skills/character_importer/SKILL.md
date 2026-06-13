@@ -62,7 +62,7 @@ python skills\character_importer\card_importer.py list-chats
 python skills\character_importer\card_importer.py import-chat "C:/path/to/your/chat.jsonl" --force
 ```
 
-> 注意：`import-chat` 接受任意路径的 `.jsonl` 文件。如果 ST 导出路径不在默认目录（`C:/Users/TK/Desktop/vllm/SillyTavern/data/default-user/chats`），直接传完整路径即可。
+> 注意：`import-chat` 接受任意路径的 `.jsonl` 文件。如果 ST 导出路径不在自动检测的目录（`Desktop/vllm/SillyTavern/data/default-user/chats`），直接传完整路径即可。
 
 ### 4. 重启加载
 

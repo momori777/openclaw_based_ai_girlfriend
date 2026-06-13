@@ -28,15 +28,17 @@ from pathlib import Path
 from typing import Optional
 
 # -- Paths ------------------------------------------------
-WORKSPACE_ROOT = Path(__file__).resolve().parents[2]  # D:\AI_Girlfriend
+WORKSPACE_ROOT = Path(__file__).resolve().parents[2]  # repo root (dev or runtime workspace)
 OPENCLAW_WS = Path.home() / ".openclaw" / "workspace"  # runtime workspace
 
 HAREM_DIR = WORKSPACE_ROOT / "skills" / "harem"
 CARDS_DIR = WORKSPACE_ROOT / "skills" / "character_importer" / "cards"
 ROLE_MEMORY_DIR = OPENCLAW_WS / "memory" / "role_play"
 
-ST_CHARACTERS_DIR = Path("C:/Users/TK/Desktop/vllm/SillyTavern/data/default-user/characters")
-ST_CHATS_DIR = Path("C:/Users/TK/Desktop/vllm/SillyTavern/data/default-user/chats")
+# SillyTavern directories — auto-detected or overridden via --st-dir / --chats-dir
+_ST_HOME = (Path.home() / "Desktop" / "vllm" / "SillyTavern" / "data" / "default-user") if (Path.home() / "Desktop" / "vllm" / "SillyTavern").exists() else None
+ST_CHARACTERS_DIR = _ST_HOME / "characters" if _ST_HOME else None
+ST_CHATS_DIR = _ST_HOME / "chats" if _ST_HOME else None
 
 # Files that are role-specific (swapped during switch)
 ROLE_FILES = ["SOUL.md", "IDENTITY.md"]
@@ -665,7 +667,7 @@ def main():
 
     p_list = sub.add_parser("list", help="List all cards + harem members")
     p_list.add_argument("--dir", help="Custom search directory")
-    p_list.add_argument("--st-dir", default=str(ST_CHARACTERS_DIR))
+    p_list.add_argument("--st-dir", default=str(ST_CHARACTERS_DIR) if ST_CHARACTERS_DIR else None)
 
     p_preview = sub.add_parser("preview", help="Preview a character card")
     p_preview.add_argument("path")
@@ -678,7 +680,7 @@ def main():
     p_sh.add_argument("name")
 
     p_lc = sub.add_parser("list-chats", help="List ST chat logs")
-    p_lc.add_argument("--chats-dir", default=str(ST_CHATS_DIR))
+    p_lc.add_argument("--chats-dir", default=str(ST_CHATS_DIR) if ST_CHATS_DIR else None)
     p_lc.add_argument("--character", "-c")
 
     p_ic = sub.add_parser("import-chat", help="Import ST chat JSONL to role_play")
