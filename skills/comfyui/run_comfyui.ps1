@@ -62,7 +62,6 @@ if ($imgPath -and (Test-Path $imgPath)) {
     @{status='ok';file=$mediaFile;type='comfyui'} | ConvertTo-Json -Compress | Set-Content $flagFile
 
     Write-Output "DONE: $mediaFile"
-    Write-Output "<qqmedia>$mediaFile</qqmedia>"
 } else {
     Write-Output "FAILED: exit=$LASTEXITCODE imgPath=[$imgPath] rawLines=$($rawOutput.Count)"
 

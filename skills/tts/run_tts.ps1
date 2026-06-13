@@ -62,7 +62,6 @@ if ($wavPath -and (Test-Path $wavPath)) {
     @{status='ok';file=$mediaFile;type='tts'} | ConvertTo-Json -Compress | Set-Content $flagFile
 
     Write-Output "DONE: $mediaFile"
-    Write-Output "<qqmedia>$mediaFile</qqmedia>"
 } else {
     Write-Output "FAILED: exit=$LASTEXITCODE wavPath=[$wavPath] rawLines=$($rawOutput.Count)"
 
