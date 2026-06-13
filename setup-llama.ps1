@@ -81,6 +81,28 @@ if ($gpus.Count -gt 0) {
     $gpus = @(@{ Name = "Unknown Intel iGPU"; VRAM_GB = 0; VRAM_MB = 0 })
 }
 
+# CUDA version detection (for compatibility warnings)
+$cudaVersion = ""
+$cudaWarning = $false
+try {
+    $nvccOut = & nvcc --version 2>$null
+    if ($nvccOut -match "release (\d+\.\d+)") {
+        $cudaVersion = $Matches[1]
+        Write-Host "  CUDA:     $cudaVersion" -ForegroundColor Gray
+        # CUDA 13.x has known compatibility issues with llama.cpp on Blackwell GPUs
+        if ([version]$cudaVersion -ge [version]"13.0") {
+            Write-Host "  ⚠️  WARNING: CUDA 13.x may cause 'munmap_chunk(): invalid pointer' crashes!" -ForegroundColor Yellow
+            Write-Host "     RTX 50xx (Blackwell) + CUDA 13.x is known to break llama.cpp memory management." -ForegroundColor Yellow
+            Write-Host "     Recommend: use pre-built llama.cpp CUDA 12.8 binaries instead of self-compiling." -ForegroundColor Yellow
+            Write-Host "     Download from: https://github.com/ggml-org/llama.cpp/releases" -ForegroundColor Yellow
+            Write-Host "     Look for: llama-bXXXX-bin-win-cuda-cu12.8-x64.zip" -ForegroundColor Yellow
+            $cudaWarning = $true
+        }
+    }
+} catch {
+    Write-Host "  CUDA:     [nvcc not found — if using pre-built llama.cpp binaries, this is fine]" -ForegroundColor Gray
+}
+
 # Pick primary GPU (first discrete)
 $primaryGpu = $gpus | Where-Object { $_.VRAM_GB -gt 2 } | Select-Object -First 1
 if (-not $primaryGpu) { $primaryGpu = $gpus[0] }
