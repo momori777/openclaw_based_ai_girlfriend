@@ -156,6 +156,16 @@ fi
 # Check for CUDA / Metal
 if command -v nvidia-smi &>/dev/null; then
     ok "GPU: NVIDIA CUDA detected"
+    # Check CUDA toolkit version for RTX 50xx warning
+    if command -v nvcc &>/dev/null; then
+        CUDA_TK=$(nvcc --version 2>/dev/null | grep -oP 'release \K[0-9]+\.[0-9]+' || echo "")
+        CUDA_MAJOR=$(echo "$CUDA_TK" | cut -d. -f1 2>/dev/null || echo 0)
+        if [[ "$CUDA_MAJOR" -ge 13 ]]; then
+            warn "CUDA Toolkit $CUDA_TK detected — RTX 50xx (Blackwell) may crash with 'munmap_chunk(): invalid pointer'"
+            info "  Fix: use pre-built CUDA 12.4 llama.cpp binary instead of self-compiling"
+            info "  https://github.com/ggml-org/llama.cpp/releases → cudart-llama-bin-linux-cuda-12.4-x64.tar.gz"
+        fi
+    fi
 elif [[ "$(uname)" == "Darwin" ]]; then
     ok "GPU: Apple Silicon / Metal (auto-detected by llama.cpp)"
 elif command -v rocminfo &>/dev/null; then
@@ -371,17 +381,14 @@ echo ""
 step 6 "Path audit & fix checklist"
 echo ""
 echo -e "  ${YELLOW}╔══════════════════════════════════════════════════════════╗${NC}"
-echo -e "  ${YELLOW}║  ⚠️  These files have hardcoded paths — edit manually!   ║${NC}"
+echo -e "  ${YELLOW}║  ⚠️  Edit config.yaml to set your local paths:            ║${NC}"
 echo -e "  ${YELLOW}╚══════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
 EDITS=(
-    "skills/tts/tts_call.py|WEBUI_DIR,OUTPUT_DIR,LLAMA_EXE_PATH,LLAMA_MODEL_PATH,RESTART_SCRIPT"
-    "skills/comfyui/comfyui_call.py|COMFYUI_ROOT,PYTHON_PATH,CHECKPOINTS_DIR,OUTPUT_DIR,LLAMA_EXE_PATH,LLAMA_MODEL_PATH,RESTART_SCRIPT"
-    "skills/tts/SKILL.md|all PS command paths"
-    "skills/comfyui/SKILL.md|all PS command paths"
-    "skills/llama-watchdog.ps1|restart script path, log directory"
-    "skills/cleanup_orphans.ps1|workspace path, task_flags dir"
+    "config.yaml|llama_model_path, comfyui_root, gpt_sovits_dir, ref_wav_dir, output_dir"
+    "skills/tts/tts_call.py|all paths now read from config.yaml — just verify"
+    "skills/comfyui/comfyui_call.py|all paths now read from config.yaml — just verify"
 )
 
 for entry in "${EDITS[@]}"; do
@@ -482,9 +489,10 @@ echo -e "${GREEN}║           Time: ${ELAPSED}min | Workspace: $WORKSPACE_PATH$
 echo -e "${GREEN}╚═══════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 echo -e "  ${YELLOW}📋 Must-do checklist:${NC}"
-echo -e "    ${WHITE}1. Edit hardcoded paths in skills/*.py + SKILL.md (see Step 6)${NC}"
+echo -e "    ${WHITE}1. Edit config.yaml — set all local paths (see Step 6)${NC}"
 echo -e "    ${WHITE}2. Edit USER.md (your name/handle)${NC}"
 echo -e "    ${WHITE}3. (If you skipped Step 5) Manually configure QQ/Telegram Bot tokens${NC}"
+echo -e "    ${WHITE}4. ⚠️ RTX 50xx users: use pre-built CUDA 12.4 llama.cpp binary!${NC}"
 echo ""
 echo -e "  ${CYAN}🚀 Daily startup:${NC}"
 echo -e "    ${WHITE}bash start-girlfriend.sh${NC}"

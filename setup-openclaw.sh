@@ -226,6 +226,7 @@ else
         "HEARTBEAT.md"
         "TOOLS.md"
         "config-patch.json"
+        "config.yaml"
         "models.yaml"
         ".gitignore"
     )
@@ -280,12 +281,14 @@ else
 
     echo -e "  ${GREEN}Workspace deployed to: $WORKSPACE_PATH${NC}"
     echo ""
-    echo -e "  ${YELLOW}⚠️  IMPORTANT — Paths to update in your workspace:${NC}"
-    echo -e "  ${WHITE}  $WORKSPACE_PATH/skills/tts/tts_call.py${NC}"
-    echo -e "  ${WHITE}  $WORKSPACE_PATH/skills/tts/SKILL.md${NC}"
-    echo -e "  ${WHITE}  $WORKSPACE_PATH/skills/comfyui/comfyui_call.py${NC}"
-    echo -e "  ${WHITE}  $WORKSPACE_PATH/skills/comfyui/SKILL.md${NC}"
-    echo -e "  ${YELLOW}  Update PYTHON_PATH, WEBUI_DIR, COMFYUI_ROOT, LLAMA_MODEL_PATH etc.${NC}"
+    echo -e "  ${YELLOW}⚠️  IMPORTANT — Paths to check in config.yaml:${NC}"
+    echo -e "  ${WHITE}  $WORKSPACE_PATH/config.yaml${NC}"
+    echo -e "  ${YELLOW}  Configure llama_model_path, comfyui_root, gpt_sovits_dir etc.${NC}"
+    echo ""
+    echo -e "  ${YELLOW}⚠️  CUDA Compatibility:${NC}"
+    echo -e "  ${WHITE}  If you have RTX 50xx GPU + CUDA 13.x:${NC}"
+    echo -e "  ${WHITE}  → Use pre-built CUDA 12.4 llama.cpp binary (not self-compiled with 13.x)${NC}"
+    echo -e "  ${WHITE}  → See https://github.com/ggml-org/llama.cpp/releases${NC}"
 fi
 
 # ============================================================================

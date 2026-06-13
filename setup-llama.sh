@@ -96,7 +96,34 @@ if command -v nvidia-smi &>/dev/null; then
         VRAM_GB=$(echo "scale=1; $VRAM_MB / 1024" | bc 2>/dev/null || echo 0)
         GPU_DETECTED=true
         echo -e "  GPU:      ${GRAY}${GPU_NAME} (${VRAM_GB} GB VRAM)${NC}"
+        # CUDA driver version
+        CUDA_DRV=$(nvidia-smi --query-gpu=driver_version --format=csv,noheader 2>/dev/null | head -1 || echo "")
+        if [[ -n "$CUDA_DRV" ]]; then
+            echo -e "  CUDA Drv: ${GRAY}${CUDA_DRV}${NC}"
+        fi
     fi
+fi
+
+# Check nvcc (CUDA toolkit) version
+CUDA_TK=""
+CUDA_WARN=false
+if command -v nvcc &>/dev/null; then
+    CUDA_TK=$(nvcc --version 2>/dev/null | grep -oP 'release \K[0-9]+\.[0-9]+' || echo "")
+    if [[ -n "$CUDA_TK" ]]; then
+        echo -e "  CUDA TK:  ${GRAY}${CUDA_TK}${NC}"
+        # CUDA 13.x has known issues with llama.cpp on Blackwell (RTX 50xx)
+        CUDA_MAJOR=$(echo "$CUDA_TK" | cut -d. -f1)
+        if [[ "$CUDA_MAJOR" -ge 13 ]]; then
+            echo -e "  ${YELLOW}⚠️  CUDA 13.x may cause 'munmap_chunk(): invalid pointer' crashes!${NC}"
+            echo -e "  ${YELLOW}   RTX 50xx (Blackwell) + CUDA 13.x = known llama.cpp memory bug.${NC}"
+            echo -e "  ${YELLOW}   Solution: use pre-built CUDA 12.x llama.cpp binary instead:${NC}"
+            echo -e "  ${YELLOW}   https://github.com/ggml-org/llama.cpp/releases${NC}"
+            echo -e "  ${YELLOW}   Download: cudart-llama-bin-linux-cuda-12.4-x64.tar.gz${NC}"
+            CUDA_WARN=true
+        fi
+    fi
+elif command -v nvidia-smi &>/dev/null; then
+    echo -e "  CUDA TK:  ${GRAY}[nvcc not found — using pre-built binaries is fine]${NC}"
 fi
 
 # Try AMD ROCm
@@ -329,7 +356,9 @@ if [[ -z "$LLAMA_EXE" ]]; then
             echo ""
             echo -e "  ${CYAN}Download pre-built from:${NC}"
             echo -e "  ${WHITE}https://github.com/ggml-org/llama.cpp/releases${NC}"
-            echo -e "  ${GRAY}Choose CUDA build (Linux) or Metal build (macOS).${NC}"
+            echo -e "  ${GRAY}Linux:   cudart-llama-bin-linux-cuda-12.4-x64.tar.gz (NVIDIA)${NC}"
+            echo -e "  ${GRAY}Linux:   llama-bXXXX-bin-linux-x64.tar.gz (CPU-only)${NC}"
+            echo -e "  ${GRAY}macOS:   llama-bXXXX-bin-macos-arm64.tar.gz (Apple Silicon)${NC}"
             echo -e "  ${GRAY}Extract and add llama-server to PATH.${NC}"
             echo ""
             read -rp "  Enter llama-server path (or Enter to skip): " manual_path
