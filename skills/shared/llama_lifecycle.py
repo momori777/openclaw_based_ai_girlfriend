@@ -203,14 +203,45 @@ def _wait_for_llama_ready(port=8080, timeout=180, label="[LLAMA]"):
                     body = resp.read()
                     data = _json.loads(body)
                     if data.get("content") or data.get("stop"):
-                        print(f"{label} /completion 验证通过 — 就绪 ✓",
+                        print(f"{label} /completion 验证通过",
+                              file=sys.stderr, flush=True)
+                        break
+        except Exception:
+            pass
+        time.sleep(0.5)
+
+    # 阶段 4: /v1/chat/completions 端点验证（OpenClaw 用这个）
+    v1_deadline = min(time.time() + 60, deadline + 10)
+    chat_payload = _json.dumps({
+        "model": "qwen3.6-35b",
+        "messages": [{"role": "user", "content": "hi"}],
+        "max_tokens": 1,
+        "temperature": 0,
+    }).encode("utf-8")
+    while time.time() < v1_deadline:
+        try:
+            req = urllib.request.Request(
+                f"http://127.0.0.1:{port}/v1/chat/completions",
+                data=chat_payload,
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer 123456",
+                },
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                if resp.status == 200:
+                    body = resp.read()
+                    data = _json.loads(body)
+                    if data.get("choices"):
+                        print(f"{label} /v1/chat/completions 验证通过 — 就绪 ✓",
                               file=sys.stderr, flush=True)
                         return True
         except Exception:
             pass
         time.sleep(0.5)
 
-    print(f"{label} 警告：/completion 在超时前未响应，但端口可用，允许尝试",
+    print(f"{label} 警告：/v1/chat/completions 在超时前未响应，但端口可用，允许尝试",
           file=sys.stderr, flush=True)
     return True  # 至少端口和 /health 都过了
 

@@ -1,5 +1,5 @@
 """
-Shared utility module 鈥?llama-server lifecycle awareness.
+Shared utility module — llama-server lifecycle awareness.
 
 Used by tts_call.py, comfyui_call.py, and Sakura's local_llama_client.py.
 Eliminates duplicated port_open / wait_for_llama_ready across three codebases.
@@ -19,7 +19,7 @@ import urllib.request
 from typing import Callable
 
 
-# 鈹€鈹€ Port probe 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+# ---- Port probe ----
 
 def port_open(port: int, host: str = "127.0.0.1", timeout: float = 2.0) -> bool:
     """Check if TCP port is accepting connections."""
@@ -30,7 +30,7 @@ def port_open(port: int, host: str = "127.0.0.1", timeout: float = 2.0) -> bool:
         return False
 
 
-# 鈹€鈹€ Unavailability detection 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+# ---- Unavailability detection ----
 
 def detect_llama_unavailable(exc: object = None) -> bool:
     """Return True if local llama is unavailable (killed by TTS/ComfyUI).
@@ -62,7 +62,7 @@ def _exc_indicates_llama_dead(exc: object) -> bool:
     return not port_open(8080)
 
 
-# 鈹€鈹€ Health checks 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+# ---- Health checks ----
 
 def _health_ok(port: int, timeout: float = 5.0) -> bool:
     """HTTP /health returns 200."""
@@ -101,7 +101,35 @@ def _completion_ok(port: int, timeout: float = 10.0) -> bool:
     return False
 
 
-# 鈹€鈹€ Three-phase readiness check (main entry) 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+def _chat_completions_ok(port: int, timeout: float = 10.0) -> bool:
+    """Verify /v1/chat/completions endpoint (what OpenClaw actually uses)."""
+    test_payload = json.dumps({
+        "model": "qwen3.6-35b",
+        "messages": [{"role": "user", "content": "hi"}],
+        "max_tokens": 1,
+        "temperature": 0,
+    }).encode("utf-8")
+    try:
+        req = urllib.request.Request(
+            f"http://127.0.0.1:{port}/v1/chat/completions",
+            data=test_payload,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": "Bearer 123456",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            if resp.status == 200:
+                body = resp.read()
+                data = json.loads(body)
+                return bool(data.get("choices"))
+    except Exception:
+        pass
+    return False
+
+
+# ---- Four-phase readiness check (main entry) ----
 
 def wait_for_llama_ready(
     port: int = 8080,
@@ -110,13 +138,14 @@ def wait_for_llama_ready(
     log: Callable[[str], None] | None = None,
     poll_interval: float = 2.0,
 ) -> bool:
-    """Three-phase validation for llama-server fully ready.
+    """Four-phase validation for llama-server fully ready.
 
     Phase 1: TCP port open
     Phase 2: HTTP /health 200 (model loaded)
     Phase 3: /completion actual inference response
+    Phase 4: /v1/chat/completions (what OpenClaw uses)
 
-    Returns True when model can accept inference requests.
+    Returns True when model can accept OpenClaw inference requests.
     Consistent with start_llama() wait logic in TTS/ComfyUI scripts.
     """
     def _log(msg: str) -> None:
@@ -140,7 +169,7 @@ def wait_for_llama_ready(
     _log("[LLAMA] Waiting for /health 200 (model loading)...")
     while time.monotonic() < deadline:
         if _health_ok(port):
-            _log("[LLAMA] /health 200 鈥?model loaded")
+            _log("[LLAMA] /health 200 — model loaded")
             break
         time.sleep(poll_interval)
 
@@ -148,15 +177,23 @@ def wait_for_llama_ready(
     _log("[LLAMA] Verifying /completion probe...")
     while time.monotonic() < deadline:
         if _completion_ok(port):
-            _log("[LLAMA] /completion passed - ready")
+            _log("[LLAMA] /completion passed")
+            break
+        time.sleep(poll_interval)
+
+    # Phase 4: /v1/chat/completions (what OpenClaw actually uses)
+    _log("[LLAMA] Verifying /v1/chat/completions probe...")
+    while time.monotonic() < deadline:
+        if _chat_completions_ok(port):
+            _log("[LLAMA] /v1/chat/completions passed — ready")
             return True
         time.sleep(poll_interval)
 
-    _log("[LLAMA] /completion not responding before timeout, port open 鈥?allow attempt")
+    _log("[LLAMA] /v1/chat/completions not responding before timeout, port open — allow attempt")
     return _health_ok(port)  # at least health passed
 
 
-# 鈹€鈹€ Quick check 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+# ---- Quick check ----
 
 def is_llama_ready(port: int = 8080) -> bool:
     """Quick check if llama-server can accept requests (non-blocking)."""
