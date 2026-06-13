@@ -444,7 +444,7 @@ OpenClaw Gateway              Live2D Bridge (:19200)
 
 ## ⚠️ Important Notes
 
-- **RTX 50xx (Blackwell) + CUDA 13.x = `munmap_chunk(): invalid pointer` crash** — CUDA 13.x has known memory management incompatibility with llama.cpp on Blackwell GPUs. **Solution: use pre-built llama.cpp binaries compiled with CUDA 12.8** (not self-compiled with CUDA 13.x). Download from [llama.cpp Releases](https://github.com/ggml-org/llama.cpp/releases), choose `llama-bXXXX-bin-win-cuda-cu12.8-x64.zip`. RTX 5070 Ti is fully compatible with CUDA 12.8 drivers.
+- **RTX 50xx (Blackwell) + CUDA 13.x = `munmap_chunk(): invalid pointer` crash** — CUDA 13.x has known memory management incompatibility with llama.cpp on Blackwell GPUs. **Solution: use pre-built llama.cpp binaries compiled with CUDA 12.x** (not self-compiled with CUDA 13.x). Download from [llama.cpp Releases](https://github.com/ggml-org/llama.cpp/releases), choose `cudart-llama-bin-win-cuda-12.4-x64.zip`. RTX 5070 Ti is fully compatible with CUDA 12.x drivers.
 - Llama-server is offline for ~60–120s during TTS/ComfyUI inference — conversation pauses, but Live2D keeps running
 - Sub-sessions use **local model** (same as main), DeepSeek as optional fallback
 - Llama-server does not support cross-turn prompt cache reuse (SSM limitation) — use periodic `/reset`

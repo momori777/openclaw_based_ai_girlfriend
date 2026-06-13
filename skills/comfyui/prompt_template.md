@@ -39,6 +39,9 @@ detailed face, detailed eyes, cinematic lighting, beautiful detailed background,
 5. **花园**
    - 场景: garden, flowers, sunset
    - 着装: yukata, casual japanese dress
+6. **水手服日常**
+   - 场景: classroom, sunny afternoon, chalkboard, desk
+   - 着装: sailor school uniform, navy blue seifuku, white collar, red necktie, pleated skirt
 
 ---
 
@@ -83,6 +86,9 @@ detailed face, detailed eyes, soft lighting, beautiful detailed background,
 6. **花园**
    - 场景: garden, blooming flowers, butterflies, morning dew
    - 着装: white dress, flower crown
+7. **女仆装鞠躬**
+   - 场景: indoor, warm room, soft lighting, cozy atmosphere
+   - 着装: black and white maid outfit, frilly apron, headband, deep bow, hands on skirt, polite expression
 
 ---
 

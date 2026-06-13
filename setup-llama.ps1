@@ -93,9 +93,9 @@ try {
         if ([version]$cudaVersion -ge [version]"13.0") {
             Write-Host "  ⚠️  WARNING: CUDA 13.x may cause 'munmap_chunk(): invalid pointer' crashes!" -ForegroundColor Yellow
             Write-Host "     RTX 50xx (Blackwell) + CUDA 13.x is known to break llama.cpp memory management." -ForegroundColor Yellow
-            Write-Host "     Recommend: use pre-built llama.cpp CUDA 12.8 binaries instead of self-compiling." -ForegroundColor Yellow
+            Write-Host "     Recommend: use pre-built llama.cpp CUDA 12.x binaries instead of self-compiling." -ForegroundColor Yellow
             Write-Host "     Download from: https://github.com/ggml-org/llama.cpp/releases" -ForegroundColor Yellow
-            Write-Host "     Look for: llama-bXXXX-bin-win-cuda-cu12.8-x64.zip" -ForegroundColor Yellow
+            Write-Host "     Look for: cudart-llama-bin-win-cuda-12.4-x64.zip" -ForegroundColor Yellow
             $cudaWarning = $true
         }
     }
